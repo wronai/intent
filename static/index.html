@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntentForge - NLP Code Generation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; }
+        .hero { padding: 100px 0; }
+        .feature-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+        .feature-card:hover { transform: translateY(-5px); transition: 0.3s; }
+        code { background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; }
+    </style>
+</head>
+<body class="text-light">
+    <nav class="navbar navbar-dark bg-transparent">
+        <div class="container">
+            <a class="navbar-brand" href="#">🔧 IntentForge</a>
+            <div>
+                <a href="/api/docs" class="btn btn-outline-light btn-sm me-2">API Docs</a>
+                <a href="https://github.com/softreck/intentforge" class="btn btn-light btn-sm">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container hero text-center">
+        <h1 class="display-3 mb-4">IntentForge</h1>
+        <p class="lead mb-4">Generowanie kodu z naturalnego języka przez MQTT</p>
+        <p class="text-muted mb-5">Napisz co chcesz, a otrzymasz działający kod</p>
+        
+        <div class="row justify-content-center g-4">
+            <div class="col-md-4">
+                <div class="card feature-card h-100 p-4">
+                    <h4>🚀 REST API</h4>
+                    <p class="text-muted">Generuj endpointy FastAPI, Flask, Express jedną komendą</p>
+                    <code>forge.crud("users")</code>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card h-100 p-4">
+                    <h4>📡 MQTT</h4>
+                    <p class="text-muted">Uniwersalny protokół - działa ze statycznego HTML</p>
+                    <code>mqtt://intentforge/intent/*</code>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card h-100 p-4">
+                    <h4>🔒 Bezpieczny</h4>
+                    <p class="text-muted">3-poziomowa walidacja, parametryzowane SQL</p>
+                    <code>validate(code) → True</code>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-5">
+            <a href="/examples/example2_static_html.html" class="btn btn-primary btn-lg me-3">
+                Wypróbuj Demo
+            </a>
+            <a href="/api/docs" class="btn btn-outline-light btn-lg">
+                Dokumentacja API
+            </a>
+        </div>
+    </div>
+
+    <footer class="text-center py-4 text-muted">
+        <small>IntentForge v0.1.0 | Softreck © 2025</small>
+    </footer>
+</body>
+</html>
