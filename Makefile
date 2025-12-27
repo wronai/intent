@@ -128,10 +128,10 @@ docker-run: ## Run Docker container
 		-v $(PWD)/.env:/app/.env:ro \
 		$(DOCKER_IMAGE)
 
-docker-compose-up: ## Start all services
-	docker-compose up -d
+start: ## Start all services
+	docker-compose up --build
 
-docker-compose-down: ## Stop all services
+stop: ## Stop all services
 	docker-compose down -v
 
 #━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

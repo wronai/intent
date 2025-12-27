@@ -127,6 +127,7 @@ class IntentForge:
         mqtt_port: int = 1883,
         api_key: str | None = None,
         model: str = "claude-sonnet-4-5-20250929",
+        provider: str = "anthropic",
         enable_auto_deploy: bool = False,
         sandbox_mode: bool = True,
     ):
@@ -134,6 +135,7 @@ class IntentForge:
         self.mqtt_port = mqtt_port
         self.api_key = api_key
         self.model = model
+        self.provider = provider
         self.enable_auto_deploy = enable_auto_deploy
         self.sandbox_mode = sandbox_mode
 
@@ -172,7 +174,9 @@ class IntentForge:
         if self._generator is None:
             from .generator import CodeGenerator
 
-            self._generator = CodeGenerator(api_key=self.api_key, model=self.model)
+            self._generator = CodeGenerator(
+                api_key=self.api_key, model=self.model, provider=self.provider
+            )
         return self._generator
 
     @property

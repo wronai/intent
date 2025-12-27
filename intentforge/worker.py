@@ -181,7 +181,7 @@ async def _run() -> None:
         logger.info("Connected to MQTT broker %s:%s", settings.mqtt.host, settings.mqtt.port)
         client.subscribe("intentforge/+/request/+", qos=1)
 
-    def on_message(client, userdata, msg, properties):
+    def on_message(client, userdata, msg):
         topic = msg.topic
         try:
             payload = json.loads(msg.payload.decode("utf-8"))

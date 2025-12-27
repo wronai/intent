@@ -78,6 +78,7 @@ class Sandbox:
         "tuple",
         "type",
         "zip",
+        "__build_class__",
     }
 
     # Blocked modules
@@ -105,12 +106,9 @@ class Sandbox:
 
     def create_restricted_globals(self) -> dict[str, Any]:
         """Create restricted globals for exec()"""
-        safe_builtins = {
-            name: getattr(
-                __builtins__ if isinstance(__builtins__, dict) else vars(__builtins__), name, None
-            )
-            for name in self.SAFE_BUILTINS
-        }
+        import builtins
+
+        safe_builtins = {name: getattr(builtins, name, None) for name in self.SAFE_BUILTINS}
 
         # Add safe __import__
         def safe_import(name, *args, **kwargs):

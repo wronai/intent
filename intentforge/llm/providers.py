@@ -145,11 +145,17 @@ class BaseLLMProvider(ABC):
         pass
 
     async def generate_code(
-        self, description: str, language: str = "python", context: dict[str, Any] | None = None
+        self,
+        description: str,
+        language: str = "python",
+        context: dict[str, Any] | None = None,
+        system: str | None = None,
+        **kwargs,
     ) -> LLMResponse:
         """Generate code from natural language description"""
 
-        system = f"""You are an expert {language} developer. Generate clean, production-ready code.
+        if system is None:
+            system = f"""You are an expert {language} developer. Generate clean, production-ready code.
 Rules:
 - Return ONLY code, no explanations
 - Include proper error handling
@@ -163,7 +169,7 @@ Rules:
         if context:
             prompt += f"\n\nContext:\n{context}"
 
-        return await self.generate(prompt, system=system)
+        return await self.generate(prompt, system=system, **kwargs)
 
     def _measure_latency(self, start_time: float) -> float:
         """Calculate latency in milliseconds"""
