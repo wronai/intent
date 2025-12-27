@@ -31,18 +31,30 @@ async def _handle_intent_request(
     request_id: str | None,
     payload: dict[str, Any],
 ) -> None:
+    logger.info("[INTENT] Processing intent request_id=%s from client=%s", request_id, client_id)
+    logger.info("[INTENT] Payload: %s", json.dumps(payload, indent=2)[:500])
     try:
         intent = Intent.from_dict(payload)
+        logger.info(
+            "[INTENT] Created Intent: type=%s, platform=%s",
+            intent.intent_type,
+            intent.target_platform,
+        )
         result = await forge.process_intent(intent)
+        logger.info("[INTENT] Processing complete: success=%s", result.success)
+        if not result.success:
+            logger.warning("[INTENT] Validation errors: %s", result.validation_errors)
         response: dict[str, Any] = result.to_dict()
         if request_id is not None:
             response["request_id"] = request_id
+        logger.info("[INTENT] Sending response to topic: intentforge/intent/response/%s", client_id)
         mqtt_client.publish(
             f"intentforge/intent/response/{client_id}",
             json.dumps(response),
             qos=1,
         )
     except Exception as e:
+        logger.error("[INTENT] Failed: %s", str(e), exc_info=True)
         mqtt_client.publish(
             f"intentforge/intent/response/{client_id}",
             json.dumps({"success": False, "error": str(e), "request_id": request_id}),
@@ -183,10 +195,12 @@ async def _run() -> None:
 
     def on_message(client, userdata, msg):
         topic = msg.topic
+        logger.info("[MQTT] Received message on topic: %s", topic)
         try:
             payload = json.loads(msg.payload.decode("utf-8"))
+            logger.info("[MQTT] Payload size: %d bytes", len(msg.payload))
         except Exception as e:
-            logger.warning("Invalid JSON on topic %s: %s", topic, e)
+            logger.warning("[MQTT] Invalid JSON on topic %s: %s", topic, e)
             return
 
         parts = topic.split("/")
@@ -198,13 +212,16 @@ async def _run() -> None:
             return
 
         request_id = payload.get("request_id")
+        logger.info("[MQTT] Action=%s, client_id=%s, request_id=%s", action, client_id, request_id)
 
         if action == "intent":
+            logger.info("[MQTT] Dispatching to _handle_intent_request")
             asyncio.run_coroutine_threadsafe(
                 _handle_intent_request(forge, client, client_id, request_id, payload),
                 loop,
             )
         else:
+            logger.info("[MQTT] Dispatching to _handle_action_request: action=%s", action)
             asyncio.run_coroutine_threadsafe(
                 _handle_action_request(forge, client, action, client_id, request_id, payload),
                 loop,

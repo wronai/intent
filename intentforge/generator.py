@@ -125,35 +125,35 @@ class UniversalGenerator(DSLGenerator):
         # Determine target language from platform
         language = self._detect_language(intent)
 
-        system = f"""You are an expert software developer.
-You generate production-ready code based on user intent.
+        system = f"""You are a code generator that creates simple, executable Python code.
 
-Context:
-{context.to_prompt_context()}
-Target Platform: {intent.target_platform.value}
+CRITICAL RULES:
+1. Return ONLY raw Python code - NO markdown, NO explanations.
+2. For mock/demo data: Create it DIRECTLY in code using literals (lists, dicts).
+3. DO NOT import: os, sys, subprocess, shutil, socket, http, urllib, sqlalchemy.
+4. DO NOT use: database connections, file I/O, network calls, environment variables.
+5. Assign the final result to a variable named 'result'.
+6. Keep code simple and self-contained.
+
+Example for "return 3 users":
+```
+result = [
+    {{"id": 1, "name": "Alice", "email": "alice@example.com"}},
+    {{"id": 2, "name": "Bob", "email": "bob@example.com"}},
+    {{"id": 3, "name": "Charlie", "email": "charlie@example.com"}}
+]
+```
+
 Target Language: {language}
-
-Rules:
-1. Return ONLY the code, no explanations or markdown.
-2. Follow best practices for {language}.
-3. Include proper error handling.
-4. Use environment variables for secrets.
-5. Add helpful comments.
-6. For functions/workflows, assign the final result to a variable named 'result'.
-7. Use simple data structures (dict, list) instead of custom classes.
-8. Make code secure and robust.
-9. DO NOT use these modules: os, sys, subprocess, shutil, socket, http, urllib.
-10. For mock data, create it directly without file I/O or system calls.
 """
 
-        prompt = f"""Generate code for the following intent:
+        prompt = f"""Generate simple Python code for: "{intent.description}"
 
-Intent: "{intent.description}"
-Type: {intent.intent_type.value}
-Context: {json.dumps(intent.context)}
-Constraints: {intent.constraints}
-
-Return valid {language} code."""
+REMEMBER:
+- NO imports of os, sys, database libraries
+- Create mock data DIRECTLY as Python literals
+- Assign result to 'result' variable
+- Return ONLY the code, nothing else"""
 
         response = await llm.generate_code(prompt, system=system)
         return self.extract_code(response.content), language
