@@ -115,6 +115,11 @@ async def process_intent(request: IntentRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 # Serve static files for the frontend example
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(static_dir, exist_ok=True)
@@ -123,4 +128,5 @@ app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8085)
+    port = int(os.getenv("PORT", 8085))
+    uvicorn.run(app, host="0.0.0.0", port=port)

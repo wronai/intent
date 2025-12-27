@@ -1,5 +1,7 @@
 # IntentForge Documentation
 
+**[🏠 Home](INDEX.md) | [⚙️ Setup](setup.md) | [🛠️ Usage](usage.md) | [🏗️ Architecture](architecture.md) | [📚 API](api.md)**
+
 Welcome to the **IntentForge** documentation. IntentForge is a framework for **Intent-Driven Development**, allowing you to generate and execute code dynamically from natural language descriptions.
 
 ## Navigation

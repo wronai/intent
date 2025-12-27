@@ -1,5 +1,7 @@
 # API Reference
 
+**[🏠 Home](INDEX.md) | [⚙️ Setup](setup.md) | [🛠️ Usage](usage.md) | [🏗️ Architecture](architecture.md) | [📚 API](api.md)**
+
 This section documents the internal Python API for IntentForge.
 
 ## Core

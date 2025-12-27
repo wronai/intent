@@ -68,7 +68,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Default command - run API server
 EXPOSE 8000
-CMD ["sh", "-c", "python -m uvicorn intentforge.server:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "python examples/server.py"]
 
 # =============================================================================
 # Alternative targets

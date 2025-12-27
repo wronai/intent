@@ -1,5 +1,7 @@
 # Architecture Overview
 
+**[🏠 Home](INDEX.md) | [⚙️ Setup](setup.md) | [🛠️ Usage](usage.md) | [🏗️ Architecture](architecture.md) | [📚 API](api.md)**
+
 IntentForge operates as a bridge between Natural Language Intents and Executable Code.
 
 ```mermaid

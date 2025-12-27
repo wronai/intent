@@ -1,5 +1,7 @@
 # Setup Guide
 
+**[🏠 Home](INDEX.md) | [⚙️ Setup](setup.md) | [🛠️ Usage](usage.md) | [🏗️ Architecture](architecture.md) | [📚 API](api.md)**
+
 ## Requirements
 
 - **Python**: 3.10+

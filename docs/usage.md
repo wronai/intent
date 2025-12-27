@@ -1,5 +1,7 @@
 # Usage Guide
 
+**[🏠 Home](INDEX.md) | [⚙️ Setup](setup.md) | [🛠️ Usage](usage.md) | [🏗️ Architecture](architecture.md) | [📚 API](api.md)**
+
 IntentForge supports both traditional backend usage and a modern **Frontend Auto-Handler**.
 
 ## Frontend Auto-Handler
@@ -64,6 +66,34 @@ Automatically populate a table with data fetched or generated via intent.
 2. Navigate to:
    - Form: `http://localhost/examples/static/form.html`
    - Table: `http://localhost/examples/static/table.html`
+
+### Verification & Debugging
+
+**1. Browser Test**
+Fill the form and submit. The URL will update with parameters (this is just the form default behavior before JS intercepts, or if using GET):
+```
+http://localhost/examples/static/form.html?name=Jan+Kowalski&email=jan%40example.com...
+```
+*Note: The IntentHandler intercepts the submit event to send JSON to the backend.*
+
+**2. Check Server Logs**
+When an intent is processed, you'll see:
+```log
+INFO:     Started server process
+Initializing IntentForge...
+Received intent: Handle contact form submission...
+INFO:     127.0.0.1:xxx - "POST /api/intent HTTP/1.1" 200 OK
+```
+
+**3. Manual API Test (curl)**
+```bash
+curl -X POST http://localhost:8085/api/intent \
+-H "Content-Type: application/json" \
+-d '{
+    "description": "Calculate 5th Fibonacci number",
+    "intent_type": "workflow"
+}'
+```
 
 ---
 
