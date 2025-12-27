@@ -83,7 +83,7 @@ class LLMSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="LLM_", env_file=".env", extra="ignore")
 
-    provider: Literal["anthropic", "openai", "local"] = "anthropic"
+    provider: Literal["anthropic", "openai", "ollama", "local"] = "anthropic"
     api_key: SecretStr = Field(default=SecretStr(""))
     model: str = "claude-sonnet-4-5-20250929"
     max_tokens: int = Field(default=4096, ge=100, le=100000)
@@ -102,6 +102,7 @@ class LLMSettings(BaseSettings):
         urls = {
             "anthropic": "https://api.anthropic.com/v1",
             "openai": "https://api.openai.com/v1",
+            "ollama": os.getenv("OLLAMA_HOST", "http://localhost:11434"),
             "local": "http://localhost:8080/v1",
         }
         return urls.get(self.provider, urls["anthropic"])
