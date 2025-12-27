@@ -142,6 +142,8 @@ Rules:
 6. For functions/workflows, assign the final result to a variable named 'result'.
 7. Use simple data structures (dict, list) instead of custom classes.
 8. Make code secure and robust.
+9. DO NOT use these modules: os, sys, subprocess, shutil, socket, http, urllib.
+10. For mock data, create it directly without file I/O or system calls.
 """
 
         prompt = f"""Generate code for the following intent:
