@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntentForge - Zero JavaScript Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; color: #fff; }
+        .demo-section { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 30px; margin-bottom: 30px; }
+        .code-example { background: #0d1117; border-radius: 8px; padding: 15px; font-family: monospace; font-size: 14px; overflow-x: auto; }
+        .badge-zero { background: linear-gradient(45deg, #00c853, #00e676); color: #000; }
+        h3 { border-bottom: 2px solid #00e676; padding-bottom: 10px; }
+        intent-form, intent-data, intent-auth { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <h1>🚀 IntentForge</h1>
+            <h2 class="text-muted">Zero JavaScript Required</h2>
+            <p class="lead">
+                Kompletne funkcje backendowe używając tylko HTML
+                <span class="badge badge-zero ms-2">0 linii JS</span>
+            </p>
+        </div>
+
+        <!-- Example 1: Contact Form -->
+        <div class="demo-section">
+            <h3>📧 1. Formularz Kontaktowy</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <p>Cały backend (walidacja, email, baza danych) - bez pisania JavaScript!</p>
+                    
+                    <intent-form 
+                        action="contact" 
+                        success-message="✅ Wiadomość wysłana!"
+                        loading-text="Wysyłanie..."
+                        reset="true">
+                        
+                        <div class="mb-3">
+                            <input type="email" name="email" class="form-control" placeholder="Email" required>
+                        </div>
+                        <div class="mb-3">
+                            <textarea name="message" class="form-control" rows="3" placeholder="Wiadomość" required></textarea>
+                        </div>
+                    </intent-form>
+                </div>
+                <div class="col-md-6">
+                    <div class="code-example text-success">
+&lt;intent-form action="contact" success-message="Wysłano!"&gt;
+    &lt;input name="email" type="email" required&gt;
+    &lt;textarea name="message" required&gt;&lt;/textarea&gt;
+&lt;/intent-form&gt;
+                    </div>
+                    <small class="text-muted">To wszystko! Backend generowany automatycznie.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Example 2: Payment Button -->
+        <div class="demo-section">
+            <h3>💳 2. Przycisk Płatności</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <p>Integracja PayPal/Stripe - jeden tag HTML!</p>
+                    
+                    <div class="d-flex gap-3 mb-3">
+                        <intent-pay 
+                            amount="49.99" 
+                            currency="PLN" 
+                            product="ebook-python"
+                            provider="paypal"
+                            email="demo@example.com">
+                            🛒 Kup za 49.99 PLN
+                        </intent-pay>
+                        
+                        <intent-pay 
+                            amount="99.99" 
+                            currency="PLN" 
+                            product="course-react"
+                            provider="stripe">
+                            💳 Kurs React 99.99 PLN
+                        </intent-pay>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="code-example text-success">
+&lt;intent-pay 
+    amount="49.99" 
+    currency="PLN" 
+    product="ebook-python"
+    provider="paypal"&gt;
+    Kup za 49.99 PLN
+&lt;/intent-pay&gt;
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Example 3: Auto-refresh Image -->
+        <div class="demo-section">
+            <h3>🖼️ 3. Auto-odświeżany Obraz</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <p>Obraz odświeża się automatycznie co 5 sekund.</p>
+                    
+                    <intent-image 
+                        src="https://picsum.photos/400/200" 
+                        refresh="5000"
+                        style="max-width: 100%; border-radius: 8px;">
+                    </intent-image>
+                </div>
+                <div class="col-md-6">
+                    <div class="code-example text-success">
+&lt;intent-image 
+    src="/api/camera/snapshot" 
+    refresh="5000"&gt;
+&lt;/intent-image&gt;
+                    </div>
+                    <small class="text-muted">Idealne dla: wykresów, kamer, dashboardów.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Example 4: Data from Database -->
+        <div class="demo-section">
+            <h3>📊 4. Dane z Bazy Danych</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <p>Automatyczne pobieranie i wyświetlanie danych.</p>
+                    
+                    <!-- Template for rendering -->
+                    <template id="product-template">
+                        <div class="card mb-2 bg-dark">
+                            <div class="card-body d-flex justify-content-between">
+                                <span>{{name}}</span>
+                                <strong>{{price}} PLN</strong>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <intent-data 
+                        table="products" 
+                        limit="5"
+                        template="#product-template"
+                        refresh="30000">
+                    </intent-data>
+                </div>
+                <div class="col-md-6">
+                    <div class="code-example text-success">
+&lt;template id="product-template"&gt;
+    &lt;div class="product"&gt;
+        {{name}} - {{price}} PLN
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;intent-data 
+    table="products" 
+    limit="5"
+    template="#product-template"&gt;
+&lt;/intent-data&gt;
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Example 5: Authentication -->
+        <div class="demo-section">
+            <h3>🔐 5. Logowanie</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <p>Kompletne logowanie z social login.</p>
+                    
+                    <intent-auth 
+                        mode="login" 
+                        redirect="/dashboard"
+                        providers="google,github">
+                    </intent-auth>
+                </div>
+                <div class="col-md-6">
+                    <div class="code-example text-success">
+&lt;intent-auth 
+    mode="login" 
+    redirect="/dashboard"
+    providers="google,github"&gt;
+&lt;/intent-auth&gt;
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Example 6: Camera with AI -->
+        <div class="demo-section">
+            <h3>📹 6. Kamera z AI</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <p>Streaming z detekcją ruchu i alertami email.</p>
+                    
+                    <div class="bg-dark p-3 rounded text-center">
+                        <small class="text-muted">[Wymaga połączenia z kamerą RTSP]</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="code-example text-success">
+&lt;intent-camera 
+    source="rtsp://192.168.1.100/stream"
+    refresh="1000"
+    detect="person,vehicle"
+    alert-email="security@company.com"&gt;
+&lt;/intent-camera&gt;
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="demo-section text-center">
+            <h3>📈 Podsumowanie</h3>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="display-4 text-success">0</div>
+                    <p>Linii JavaScript</p>
+                </div>
+                <div class="col-md-4">
+                    <div class="display-4 text-success">7</div>
+                    <p>Web Components</p>
+                </div>
+                <div class="col-md-4">
+                    <div class="display-4 text-success">∞</div>
+                    <p>Możliwości</p>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <h4>Wszystkie komponenty:</h4>
+            <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
+                <span class="badge bg-success p-2">&lt;intent-form&gt;</span>
+                <span class="badge bg-success p-2">&lt;intent-pay&gt;</span>
+                <span class="badge bg-success p-2">&lt;intent-image&gt;</span>
+                <span class="badge bg-success p-2">&lt;intent-data&gt;</span>
+                <span class="badge bg-success p-2">&lt;intent-camera&gt;</span>
+                <span class="badge bg-success p-2">&lt;intent-auth&gt;</span>
+                <span class="badge bg-success p-2">&lt;intent-chart&gt;</span>
+            </div>
+        </div>
+
+        <!-- Setup -->
+        <div class="demo-section">
+            <h3>⚡ Szybki Start</h3>
+            <div class="code-example text-warning">
+&lt;!-- 1. Dodaj jeden script --&gt;
+&lt;script src="https://cdn.intentforge.dev/v2/components.min.js"
+        data-api="https://your-api.com"&gt;&lt;/script&gt;
+
+&lt;!-- 2. Używaj komponentów --&gt;
+&lt;intent-form action="contact"&gt;...&lt;/intent-form&gt;
+&lt;intent-pay amount="49.99"&gt;...&lt;/intent-pay&gt;
+
+&lt;!-- Gotowe! Backend generowany automatycznie --&gt;
+            </div>
+        </div>
+    </div>
+
+    <!-- IntentForge Web Components -->
+    <script src="/frontend/components/intentforge-components.js" 
+            data-api="http://localhost:8000"
+            data-debug="true">
+    </script>
+</body>
+</html>

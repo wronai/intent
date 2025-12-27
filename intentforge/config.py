@@ -25,6 +25,7 @@ class DatabaseSettings(BaseSettings):
     driver: Literal["postgresql", "mysql", "sqlite", "mongodb"] = "postgresql"
     host: str = "localhost"
     port: int = 5432
+    port_external: int = 5432
     name: str = "intentforge"
     user: str = "postgres"
     password: SecretStr = Field(default=SecretStr(""))
@@ -69,7 +70,9 @@ class MQTTSettings(BaseSettings):
     
     host: str = "localhost"
     port: int = 1883
+    port_external: int = 1883
     websocket_port: int = 9001
+    websocket_port_external: int = 9001
     username: Optional[str] = None
     password: Optional[SecretStr] = None
     
@@ -171,6 +174,21 @@ class ValidationSettings(BaseSettings):
     sandbox_memory_limit: str = "256m"
 
 
+class RedisSettings(BaseSettings):
+    """Redis configuration"""
+    
+    model_config = SettingsConfigDict(
+        env_prefix="REDIS_",
+        env_file=".env",
+        extra="ignore"
+    )
+    
+    host: str = "localhost"
+    port: int = 6379
+    port_external: int = 6379
+    url: str = "redis://localhost:6379/0"
+
+
 class Settings(BaseSettings):
     """Main application settings"""
     
@@ -186,10 +204,13 @@ class Settings(BaseSettings):
     environment: Literal["development", "staging", "production"] = "development"
     debug: bool = False
     
-    # Server
-    host: str = "0.0.0.0"
-    port: int = 8000
-    workers: int = Field(default=4, ge=1, le=32)
+    # Server (using APP_ prefix for clarity)
+    app_host: str = Field(default="0.0.0.0", alias="APP_HOST")
+    app_port: int = Field(default=8000, alias="APP_PORT")
+    app_workers: int = Field(default=4, ge=1, le=32, alias="APP_WORKERS")
+    
+    # Web port
+    web_port: int = Field(default=80, alias="WEB_PORT")
     
     # Logging
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
@@ -200,7 +221,21 @@ class Settings(BaseSettings):
     mqtt: MQTTSettings = Field(default_factory=MQTTSettings)
     llm: LLMSettings = Field(default_factory=LLMSettings)
     cache: CacheSettings = Field(default_factory=CacheSettings)
+    redis: RedisSettings = Field(default_factory=RedisSettings)
     validation: ValidationSettings = Field(default_factory=ValidationSettings)
+    
+    # Backwards compatibility properties
+    @property
+    def host(self) -> str:
+        return self.app_host
+    
+    @property
+    def port(self) -> int:
+        return self.app_port
+    
+    @property
+    def workers(self) -> int:
+        return self.app_workers
     
     @field_validator("environment", mode="before")
     @classmethod
@@ -240,6 +275,21 @@ def get_mqtt_settings() -> MQTTSettings:
 def get_llm_settings() -> LLMSettings:
     """Get LLM settings"""
     return get_settings().llm
+
+
+def get_redis_settings() -> RedisSettings:
+    """Get Redis settings"""
+    return get_settings().redis
+
+
+def get_cache_settings() -> CacheSettings:
+    """Get cache settings"""
+    return get_settings().cache
+
+
+def get_validation_settings() -> ValidationSettings:
+    """Get validation settings"""
+    return get_settings().validation
 
 
 # Environment-specific configuration loader
