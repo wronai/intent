@@ -29,7 +29,7 @@ install: ## Install production dependencies
 
 dev: ## Install development dependencies
 	@echo "$(GREEN)Installing development dependencies...$(NC)"
-	$(PIP) install -e ".[dev,test,docs]"
+	$(PIP) install -e ".[dev,test,docs,server]"
 	pre-commit install
 
 deps-update: ## Update all dependencies

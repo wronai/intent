@@ -1,0 +1,123 @@
+# LiteLLM Proxy Configuration
+# Provides unified API for 100+ LLM providers
+# 
+# Usage:
+#   - Start: docker-compose --profile litellm up -d
+#   - API:   http://localhost:4000/chat/completions
+#
+# Model naming convention:
+#   - Ollama:    ollama/llama3, ollama/codellama, ollama/mistral
+#   - OpenAI:    gpt-4o, gpt-3.5-turbo
+#   - Anthropic: claude-3-opus, claude-3-sonnet
+#   - Azure:     azure/gpt-4
+#   - AWS:       bedrock/anthropic.claude-v2
+
+model_list:
+  # ============================================================================
+  # Ollama Models (Local)
+  # ============================================================================
+  - model_name: llama3
+    litellm_params:
+      model: ollama/llama3
+      api_base: http://ollama:11434
+  
+  - model_name: codellama
+    litellm_params:
+      model: ollama/codellama
+      api_base: http://ollama:11434
+  
+  - model_name: mistral
+    litellm_params:
+      model: ollama/mistral
+      api_base: http://ollama:11434
+  
+  - model_name: llama3.1
+    litellm_params:
+      model: ollama/llama3.1
+      api_base: http://ollama:11434
+  
+  - model_name: phi3
+    litellm_params:
+      model: ollama/phi3
+      api_base: http://ollama:11434
+  
+  - model_name: qwen2
+    litellm_params:
+      model: ollama/qwen2
+      api_base: http://ollama:11434
+
+  # ============================================================================
+  # Anthropic Models (requires ANTHROPIC_API_KEY)
+  # ============================================================================
+  - model_name: claude-3-opus
+    litellm_params:
+      model: claude-3-opus-20240229
+      api_key: os.environ/ANTHROPIC_API_KEY
+  
+  - model_name: claude-3-sonnet
+    litellm_params:
+      model: claude-3-sonnet-20240229
+      api_key: os.environ/ANTHROPIC_API_KEY
+  
+  - model_name: claude-3-haiku
+    litellm_params:
+      model: claude-3-haiku-20240307
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # ============================================================================
+  # OpenAI Models (requires OPENAI_API_KEY)
+  # ============================================================================
+  - model_name: gpt-4o
+    litellm_params:
+      model: gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+  
+  - model_name: gpt-4-turbo
+    litellm_params:
+      model: gpt-4-turbo
+      api_key: os.environ/OPENAI_API_KEY
+  
+  - model_name: gpt-3.5-turbo
+    litellm_params:
+      model: gpt-3.5-turbo
+      api_key: os.environ/OPENAI_API_KEY
+
+# ============================================================================
+# General Settings
+# ============================================================================
+
+general_settings:
+  # Caching
+  cache: true
+  cache_params:
+    type: redis
+    host: redis
+    port: 6379
+  
+  # Logging
+  set_verbose: false
+  
+  # Rate limiting
+  max_parallel_requests: 100
+  
+  # Fallbacks - if primary model fails, try alternatives
+  fallbacks:
+    - model: llama3
+      fallback: mistral
+    - model: gpt-4o
+      fallback: claude-3-sonnet
+
+# ============================================================================
+# Router Settings
+# ============================================================================
+
+router_settings:
+  # Load balancing strategy
+  routing_strategy: simple-shuffle
+  
+  # Timeout settings
+  timeout: 60
+  
+  # Retry settings
+  num_retries: 2
+  retry_after: 5
