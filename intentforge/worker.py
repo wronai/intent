@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import signal
-from typing import Any, Dict, Optional
+from typing import Any
 
 import paho.mqtt.client as mqtt
 
@@ -12,12 +12,11 @@ from .config import get_settings
 from .core import Intent, IntentForge
 from .services import services
 
-
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def _filter_kwargs(fn, data: Dict[str, Any]) -> Dict[str, Any]:
+def _filter_kwargs(fn, data: dict[str, Any]) -> dict[str, Any]:
     sig = inspect.signature(fn)
     if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
         return data
@@ -29,13 +28,13 @@ async def _handle_intent_request(
     forge: IntentForge,
     mqtt_client: mqtt.Client,
     client_id: str,
-    request_id: Optional[str],
-    payload: Dict[str, Any],
+    request_id: str | None,
+    payload: dict[str, Any],
 ) -> None:
     try:
         intent = Intent.from_dict(payload)
         result = await forge.process_intent(intent)
-        response: Dict[str, Any] = result.to_dict()
+        response: dict[str, Any] = result.to_dict()
         if request_id is not None:
             response["request_id"] = request_id
         mqtt_client.publish(
@@ -56,8 +55,8 @@ async def _handle_action_request(
     mqtt_client: mqtt.Client,
     action: str,
     client_id: str,
-    request_id: Optional[str],
-    payload: Dict[str, Any],
+    request_id: str | None,
+    payload: dict[str, Any],
 ) -> None:
     response_topic = f"intentforge/{action}/response/{client_id}"
 
@@ -65,7 +64,7 @@ async def _handle_action_request(
         try:
             intent = Intent.from_dict(payload)
             result = await forge.process_intent(intent)
-            response: Dict[str, Any] = result.to_dict()
+            response: dict[str, Any] = result.to_dict()
             if request_id is not None:
                 response["request_id"] = request_id
             mqtt_client.publish(response_topic, json.dumps(response), qos=1)
@@ -83,7 +82,13 @@ async def _handle_action_request(
         if svc is None:
             mqtt_client.publish(
                 response_topic,
-                json.dumps({"success": False, "error": f"Unknown service: {action}", "request_id": request_id}),
+                json.dumps(
+                    {
+                        "success": False,
+                        "error": f"Unknown service: {action}",
+                        "request_id": request_id,
+                    }
+                ),
                 qos=1,
             )
             return
@@ -92,7 +97,9 @@ async def _handle_action_request(
         if not service_action or not isinstance(service_action, str):
             mqtt_client.publish(
                 response_topic,
-                json.dumps({"success": False, "error": "Missing 'action'", "request_id": request_id}),
+                json.dumps(
+                    {"success": False, "error": "Missing 'action'", "request_id": request_id}
+                ),
                 qos=1,
             )
             return
@@ -162,16 +169,19 @@ async def _run() -> None:
         except NotImplementedError:
             pass
 
-    mqtt_client = mqtt.Client(client_id=os.getenv("INTENTFORGE_WORKER_ID", "intentforge-worker"))
+    mqtt_client = mqtt.Client(
+        client_id=os.getenv("INTENTFORGE_WORKER_ID", "intentforge-worker"),
+        callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+    )
 
-    def on_connect(client, userdata, flags, rc):
-        if rc != 0:
-            logger.error("MQTT connect failed rc=%s", rc)
+    def on_connect(client, userdata, flags, reason_code, properties):
+        if reason_code != 0:
+            logger.error("MQTT connect failed rc=%s", reason_code)
             return
         logger.info("Connected to MQTT broker %s:%s", settings.mqtt.host, settings.mqtt.port)
         client.subscribe("intentforge/+/request/+", qos=1)
 
-    def on_message(client, userdata, msg):
+    def on_message(client, userdata, msg, properties):
         topic = msg.topic
         try:
             payload = json.loads(msg.payload.decode("utf-8"))

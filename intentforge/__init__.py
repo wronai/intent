@@ -15,72 +15,71 @@ Plugins:
 __version__ = "0.2.0"
 __author__ = "Softreck"
 
-from .core import IntentForge, Intent, IntentResult, IntentType, TargetPlatform
 from .broker import MQTTIntentBroker
-from .generator import CodeGenerator, DSLType, GenerationContext
-from .validator import CodeValidator, ValidationLevel, ValidationResult
-from .executor import DynamicExecutor
 from .cache import IntentCache
-from .config import get_settings, Settings
-from .schema_registry import SchemaRegistry, get_registry, SchemaType
-from .env_handler import EnvHandler, get_env, configure_env, EnvConfig
+from .config import Settings, get_settings
+from .core import Intent, IntentForge, IntentResult, IntentType, TargetPlatform
+from .env_handler import EnvConfig, EnvHandler, configure_env, get_env
+from .executor import DynamicExecutor
+from .generator import CodeGenerator, DSLType, GenerationContext
 from .patterns import FullstackPatterns, PatternConfig, PatternType
-from .simple import generate, crud, form, query, validate, save, Forge
 
 # New modules
 from .plugins import (
-    hook, middleware, hooks, plugins,
-    HookEvent, MiddlewarePhase, BasePlugin,
-    cached, retry, rate_limit, validate_input, audit_log
+    BasePlugin,
+    HookEvent,
+    MiddlewarePhase,
+    audit_log,
+    cached,
+    hook,
+    hooks,
+    middleware,
+    plugins,
+    rate_limit,
+    retry,
+    validate_input,
 )
+from .schema_registry import SchemaRegistry, SchemaType, get_registry
+from .simple import Forge, crud, form, generate, query, save, validate
+from .validator import CodeValidator, ValidationLevel, ValidationResult
 
 __all__ = [
     # Core
     "IntentForge",
-    "Intent", 
+    "Intent",
     "IntentResult",
     "IntentType",
     "TargetPlatform",
-    
     # Broker
     "MQTTIntentBroker",
-    
     # Generator
     "CodeGenerator",
     "DSLType",
     "GenerationContext",
-    
     # Validator
     "CodeValidator",
     "ValidationLevel",
     "ValidationResult",
-    
     # Executor
     "DynamicExecutor",
-    
     # Cache
     "IntentCache",
-    
     # Config
     "get_settings",
     "Settings",
-    
     # Schema Registry
     "SchemaRegistry",
     "get_registry",
     "SchemaType",
-    
     # Environment Handler
     "EnvHandler",
     "get_env",
     "configure_env",
     "EnvConfig",
-    
     # Patterns
     "FullstackPatterns",
     "PatternConfig",
     "PatternType",
-    
     # Simple API (one-liners)
     "generate",
     "crud",
@@ -89,7 +88,6 @@ __all__ = [
     "validate",
     "save",
     "Forge",
-    
     # Plugins & Middleware
     "hook",
     "middleware",

@@ -22,30 +22,30 @@
                 <small>Automatyczne wysyłanie emaili przez IntentForge</small>
             </div>
             <div class="card-body">
-                
+
                 <!-- Formularz z data-intent - automatyczna obsługa -->
-                <form id="contact-form" 
+                <form id="contact-form"
                       data-intent="contact"
                       data-intent-reset="true">
-                    
+
                     <div class="mb-3">
                         <label class="form-label">Imię i nazwisko *</label>
                         <input type="text" name="name" class="form-control" required
                                placeholder="Jan Kowalski">
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label">Email *</label>
                         <input type="email" name="email" class="form-control" required
                                placeholder="jan@example.com">
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label">Telefon</label>
                         <input type="tel" name="phone" class="form-control"
                                placeholder="+48 123 456 789">
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label">Temat *</label>
                         <select name="subject" class="form-select" required>
@@ -56,37 +56,37 @@
                             <option value="other">Inne</option>
                         </select>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label">Wiadomość *</label>
                         <textarea name="message" class="form-control" rows="4" required
                                   placeholder="Twoja wiadomość..."></textarea>
                     </div>
-                    
+
                     <div class="mb-3 form-check">
                         <input type="checkbox" name="newsletter" class="form-check-input" id="newsletter">
                         <label class="form-check-label" for="newsletter">
                             Chcę otrzymywać newsletter
                         </label>
                     </div>
-                    
+
                     <button type="submit" class="btn btn-primary w-100">
                         Wyślij wiadomość
                     </button>
                 </form>
-                
+
                 <!-- Komunikaty -->
                 <div class="alert alert-success mt-3 success-message" style="display: none;">
                     ✅ Wiadomość została wysłana! Odpowiemy w ciągu 24h.
                 </div>
-                
+
                 <div class="alert alert-danger mt-3 error-message" style="display: none;">
                     ❌ Wystąpił błąd. Spróbuj ponownie później.
                 </div>
-                
+
             </div>
         </div>
-        
+
         <!-- Info -->
         <div class="text-center text-white mt-4">
             <small>
@@ -97,23 +97,23 @@
     </div>
 
     <!-- IntentForge SDK -->
-    <script src="/sdk/intentforge.js" 
+    <script src="/sdk/intentforge.js"
             data-broker="ws://localhost:9001"
             data-auto-bind="true"
             data-debug="true">
     </script>
-    
+
     <script>
         // Opcjonalne: dodatkowa logika
         document.getElementById('contact-form').addEventListener('if:success', (e) => {
             console.log('Form submitted:', e.detail);
-            
+
             // Możesz dodać własną logikę
             if (e.detail.email_sent) {
                 console.log('Email confirmation sent to:', e.detail.recipient);
             }
         });
-        
+
         document.getElementById('contact-form').addEventListener('if:error', (e) => {
             console.error('Form error:', e.detail);
         });

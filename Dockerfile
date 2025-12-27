@@ -4,7 +4,7 @@
 # =============================================================================
 # Stage 1: Builder
 # =============================================================================
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
@@ -20,12 +20,12 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Install Python dependencies
 COPY pyproject.toml .
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir .
+    && pip install --no-cache-dir ".[server]"
 
 # =============================================================================
 # Stage 2: Runtime
 # =============================================================================
-FROM python:3.11-slim as runtime
+FROM python:3.11-slim AS runtime
 
 # Labels
 LABEL maintainer="Softreck <info@softreck.dev>"
@@ -68,16 +68,16 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Default command - run API server
 EXPOSE 8000
-CMD ["python", "-m", "uvicorn", "intentforge.server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "python -m uvicorn intentforge.server:app --host 0.0.0.0 --port ${PORT:-8000}"]
 
 # =============================================================================
 # Alternative targets
 # =============================================================================
 
 # Worker target
-FROM runtime as worker
+FROM runtime AS worker
 CMD ["python", "-m", "intentforge.worker"]
 
 # CLI target
-FROM runtime as cli
+FROM runtime AS cli
 ENTRYPOINT ["python", "-m", "intentforge.cli"]

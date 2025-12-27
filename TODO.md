@@ -368,13 +368,13 @@ rootdir: /home/tom/github/wronai/intent
 configfile: pyproject.toml
 plugins: cov-7.0.0, asyncio-1.3.0, respx-0.22.0, anyio-4.12.0, benchmark-5.2.3, timeout-2.4.0
 asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 0 items                                                                                                                                                                                                                                          
+collected 0 items
 
 ================================================================================================================== no tests ran in 0.01s ===================================================================================================================
 ERROR: file or directory not found: tests/
-                                                                                                                                                                                                                                                            
+
 make: *** [Makefile:67: test] Error 4
-(venv) (base) tom@nvidia:~/github/wronai/intent$ 
+(venv) (base) tom@nvidia:~/github/wronai/intent$
 
 
 przeanalizuj projekt i napisz co jest niepoprawnie zorganizowane w folderach, czy są jakieś duplikaty oraz co można zrobić, aby użycie tego rozwiazania było bezpieczniejsze i prostsze po stronie frontenduoraz działao z LLM ollama przez  liteLLM
@@ -382,7 +382,3 @@ przeanalizuj projekt i napisz co jest niepoprawnie zorganizowane w folderach, cz
 
 popraw sposob pobierania zmiennych portow i hostow z .env .env.example
 aby był jeden plik konfiguracyjny środowiska w docker, pyhton, itd, dodaj testy e2e
-
-
-
-

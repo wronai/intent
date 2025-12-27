@@ -1,23 +1,22 @@
 import inspect
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from .broker import MQTTIntentBroker
 from .config import get_settings
 from .core import Intent, IntentForge
-from .broker import MQTTIntentBroker
 from .schema_registry import SchemaType, get_registry
 from .services import services
-
 
 settings = get_settings()
 
 
-def _filter_kwargs(fn, data: Dict[str, Any]) -> Dict[str, Any]:
+def _filter_kwargs(fn, data: dict[str, Any]) -> dict[str, Any]:
     sig = inspect.signature(fn)
     if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
         return data
@@ -25,14 +24,16 @@ def _filter_kwargs(fn, data: Dict[str, Any]) -> Dict[str, Any]:
     return {k: v for k, v in data.items() if k in allowed}
 
 
-async def _call_service(service: str, action: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+async def _call_service(service: str, action: str, payload: dict[str, Any]) -> dict[str, Any]:
     svc = services.get(service)
     if svc is None:
         raise HTTPException(status_code=404, detail=f"Unknown service: {service}")
 
     method = getattr(svc, action, None)
     if method is None:
-        raise HTTPException(status_code=404, detail=f"Unknown action '{action}' for service '{service}'")
+        raise HTTPException(
+            status_code=404, detail=f"Unknown action '{action}' for service '{service}'"
+        )
 
     kwargs = payload.copy()
     kwargs.pop("action", None)
@@ -62,8 +63,8 @@ app.add_middleware(
 )
 
 
-_forge: Optional[IntentForge] = None
-_broker: Optional[MQTTIntentBroker] = None
+_forge: IntentForge | None = None
+_broker: MQTTIntentBroker | None = None
 
 
 @app.on_event("startup")
@@ -99,7 +100,7 @@ async def _shutdown() -> None:
 
 
 @app.get("/health")
-async def health() -> Dict[str, str]:
+async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
@@ -109,7 +110,9 @@ async def api_generate(request: Request) -> JSONResponse:
 
     schema_result = get_registry().validate(body, SchemaType.INTENT_REQUEST)
     if not schema_result.is_valid:
-        return JSONResponse(status_code=400, content={"success": False, "errors": schema_result.errors})
+        return JSONResponse(
+            status_code=400, content={"success": False, "errors": schema_result.errors}
+        )
 
     request_id = body.get("request_id")
 
@@ -122,7 +125,7 @@ async def api_generate(request: Request) -> JSONResponse:
         raise HTTPException(status_code=503, detail="Server not ready")
 
     result = await _forge.process_intent(intent)
-    payload: Dict[str, Any] = result.to_dict()
+    payload: dict[str, Any] = result.to_dict()
 
     if request_id is not None:
         payload["request_id"] = request_id
@@ -135,7 +138,9 @@ async def api_service(service: str, request: Request) -> JSONResponse:
     body = await request.json()
     action = body.get("action")
     if not action or not isinstance(action, str):
-        return JSONResponse(status_code=400, content={"success": False, "error": "Missing 'action'"})
+        return JSONResponse(
+            status_code=400, content={"success": False, "error": "Missing 'action'"}
+        )
 
     request_id = body.get("request_id")
 

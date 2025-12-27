@@ -32,26 +32,26 @@ IntentForge transforms natural language descriptions into production-ready code.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           CLIENT LAYER                                       │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
-│  │ Static   │  │ React    │  │ CLI      │  │ Mobile   │  │ ESP32    │      │
-│  │ HTML/JS  │  │ WebGUI   │  │ Shell    │  │ App      │  │ Firmware │      │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘      │
+│                           CLIENT LAYER                                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │ Static   │  │ React    │  │ CLI      │  │ Mobile   │  │ ESP32    │       │
+│  │ HTML/JS  │  │ WebGUI   │  │ Shell    │  │ App      │  │ Firmware │       │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘       │
 │       └─────────────┴─────────────┴─────────────┴─────────────┘             │
 │                                   │                                         │
 │                    Natural Language Intent (MQTT)                           │
 └───────────────────────────────────┬─────────────────────────────────────────┘
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         MQTT BROKER                                          │
+│                         MQTT BROKER                                         │
 │  intentforge/intent/request/{client_id}  →  Intent requests                 │
 │  intentforge/intent/response/{client_id} →  Generated code                  │
 │  intentforge/capabilities                →  Server capabilities             │
 └───────────────────────────────────┬─────────────────────────────────────────┘
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                      INTENTFORGE ENGINE                                      │
-│                                                                              │
+│                      INTENTFORGE ENGINE                                     │
+│                                                                             │
 │  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐                  │
 │  │   CACHE     │      │  VALIDATOR  │      │  GENERATOR  │                  │
 │  │             │      │             │      │             │                  │
@@ -61,7 +61,7 @@ IntentForge transforms natural language descriptions into production-ready code.
 │  └─────────────┘      └─────────────┘      │ - API       │                  │
 │                                            │ LLM Fallback│                  │
 │                                            └─────────────┘                  │
-│                                                                              │
+│                                                                             │
 │  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐                  │
 │  │   CONFIG    │      │   SANDBOX   │      │  EXECUTOR   │                  │
 │  │             │      │             │      │             │                  │
@@ -78,7 +78,7 @@ IntentForge transforms natural language descriptions into production-ready code.
 
 ```bash
 # Clone repository
-git clone https://github.com/softreck/intentforge.git
+git clone https://github.com/wronai/intent.git
 cd intentforge
 
 # Install with all dependencies
@@ -102,7 +102,7 @@ async def main():
         enable_auto_deploy=False,
         sandbox_mode=True
     )
-    
+
     # Create intent
     intent = Intent(
         description="Create API endpoint to list users with pagination",
@@ -114,10 +114,10 @@ async def main():
             "model": "User"
         }
     )
-    
+
     # Generate code
     result = await forge.process_intent(intent)
-    
+
     if result.success:
         print(f"Generated {result.language} code:")
         print(result.generated_code)
@@ -141,20 +141,20 @@ asyncio.run(main())
     <textarea id="intent" placeholder="Describe what you need..."></textarea>
     <button onclick="generateCode()">Generate</button>
     <pre id="output"></pre>
-    
+
     <script>
         const client = new IntentForgeClient('ws://localhost:9001');
-        
+
         async function generateCode() {
             const description = document.getElementById('intent').value;
-            
+
             try {
                 const result = await client.submitIntent({
                     description: description,
                     intent_type: 'api_endpoint',
                     target_platform: 'python_fastapi'
                 });
-                
+
                 document.getElementById('output').textContent = result.generated_code;
             } catch (error) {
                 console.error(error);
@@ -169,7 +169,7 @@ asyncio.run(main())
 
 ```bash
 # Start full stack (server, MQTT, PostgreSQL, Redis)
-docker-compose up -d
+docker-compose up --build
 
 # View logs
 docker-compose logs -f intentforge
@@ -347,7 +347,7 @@ intentforge/
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE)
+Apache 2 License - see [LICENSE](LICENSE)
 
 ## 🤝 Contributing
 

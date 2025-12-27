@@ -77,7 +77,7 @@
             <div>
                 <h2>📊 Dashboard Real-time</h2>
                 <small class="text-muted">
-                    <span class="live-badge"></span> 
+                    <span class="live-badge"></span>
                     Dane odświeżane automatycznie
                 </small>
             </div>
@@ -88,14 +88,14 @@
                 </button>
             </div>
         </div>
-        
+
         <!-- Stock Ticker -->
         <div class="stock-ticker mb-4">
             <div class="ticker-scroll" id="stock-ticker">
                 <!-- Dynamic content -->
             </div>
         </div>
-        
+
         <!-- Metrics Row -->
         <div class="row mb-4">
             <div class="col-md-3 mb-3">
@@ -130,7 +130,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="row">
             <!-- Chart -->
             <div class="col-lg-8 mb-4">
@@ -151,7 +151,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Weather & External Data -->
             <div class="col-lg-4 mb-4">
                 <div class="weather-widget mb-4" id="weather-widget">
@@ -171,7 +171,7 @@
                         <span>🌡️ <span id="weather-feels">--</span>°</span>
                     </div>
                 </div>
-                
+
                 <!-- Server Status -->
                 <div class="card">
                     <div class="card-header">🖥️ Status serwerów</div>
@@ -183,7 +183,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Live Data Table -->
         <div class="row">
             <div class="col-12">
@@ -216,7 +216,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Auto-refresh Images Section -->
         <div class="row mt-4">
             <div class="col-12">
@@ -225,7 +225,7 @@
             <div class="col-md-4 mb-3">
                 <div class="card">
                     <div class="card-header">Wykres giełdowy (5s)</div>
-                    <img id="stock-chart" 
+                    <img id="stock-chart"
                          class="card-img-bottom"
                          data-src="/api/charts/stock?symbol=AAPL"
                          alt="Stock chart"
@@ -235,7 +235,7 @@
             <div class="col-md-4 mb-3">
                 <div class="card">
                     <div class="card-header">Mapa ciepła (10s)</div>
-                    <img id="heatmap" 
+                    <img id="heatmap"
                          class="card-img-bottom"
                          data-src="/api/charts/heatmap"
                          alt="Heatmap"
@@ -245,7 +245,7 @@
             <div class="col-md-4 mb-3">
                 <div class="card">
                     <div class="card-header">Radar pogodowy (30s)</div>
-                    <img id="weather-radar" 
+                    <img id="weather-radar"
                          class="card-img-bottom"
                          data-src="/api/weather/radar?lat=52.2297&lon=21.0122"
                          alt="Weather radar"
@@ -254,7 +254,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Refresh Indicator -->
     <div class="refresh-indicator" id="refresh-indicator">
         <small class="text-muted">
@@ -264,7 +264,7 @@
 
     <!-- IntentForge SDK -->
     <script src="/sdk/intentforge.js" data-broker="ws://localhost:9001"></script>
-    
+
     <script>
         // =================================================================
         // Configuration
@@ -281,18 +281,18 @@
                 weatherRadar: 30000 // 30 sekund
             }
         };
-        
+
         let api;
         let chart;
         let refreshEnabled = true;
         let intervals = [];
-        
+
         // =================================================================
         // Initialize
         // =================================================================
         async function init() {
             api = await IntentForge.connect('ws://localhost:9001', { debug: true });
-            
+
             // Initial load
             await Promise.all([
                 updateMetrics(),
@@ -302,20 +302,20 @@
                 updateServers(),
                 updateStockTicker()
             ]);
-            
+
             // Setup auto-refresh
             setupAutoRefresh();
-            
+
             // Setup image auto-refresh
             setupImageRefresh();
-            
+
             // Subscribe to real-time events
             subscribeToEvents();
-            
+
             // Setup countdown
             setupCountdown();
         }
-        
+
         // =================================================================
         // Auto-refresh Setup
         // =================================================================
@@ -327,14 +327,14 @@
             intervals.push(setInterval(updateServers, CONFIG.refreshIntervals.servers));
             intervals.push(setInterval(updateStockTicker, 60000)); // 1 minuta
         }
-        
+
         function setupImageRefresh() {
             // Używamy IntentForge API do auto-odświeżania obrazów
             api.image.refresh('#stock-chart', CONFIG.refreshIntervals.stockChart);
             api.image.refresh('#heatmap', CONFIG.refreshIntervals.heatmap);
             api.image.refresh('#weather-radar', CONFIG.refreshIntervals.weatherRadar);
         }
-        
+
         // =================================================================
         // Real-time Events
         // =================================================================
@@ -347,38 +347,38 @@
                     document.getElementById('new-orders-badge').style.display = 'none';
                 }, 3000);
             });
-            
+
             // Aktualizacja metryk
             api.on('metrics:update', (data) => {
                 updateMetricsDisplay(data);
             });
-            
+
             // Alert serwera
             api.on('server:alert', (data) => {
                 showNotification(`⚠️ Alert: ${data.server} - ${data.message}`);
             });
         }
-        
+
         // =================================================================
         // Data Fetching
         // =================================================================
         async function updateMetrics() {
             if (!refreshEnabled) return;
-            
+
             try {
                 const data = await api._request('data', {
                     action: 'query',
                     table: 'metrics',
                     type: 'realtime'
                 });
-                
+
                 updateMetricsDisplay(data);
                 updateLastRefresh();
             } catch (e) {
                 console.error('Metrics error:', e);
             }
         }
-        
+
         function updateMetricsDisplay(data) {
             // Simulate data if not available
             data = data || {
@@ -391,22 +391,22 @@
                 conversion: (Math.random() * 5 + 2).toFixed(2),
                 conversion_change: (Math.random() * 2 - 1).toFixed(2)
             };
-            
+
             animateValue('metric-users', data.users);
             updateChange('metric-users-change', data.users_change);
-            
+
             animateValue('metric-orders', data.orders);
             updateChange('metric-orders-change', data.orders_change);
-            
-            document.getElementById('metric-revenue').textContent = 
+
+            document.getElementById('metric-revenue').textContent =
                 new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' })
                     .format(data.revenue);
             updateChange('metric-revenue-change', data.revenue_change);
-            
+
             document.getElementById('metric-conversion').textContent = `${data.conversion}%`;
             updateChange('metric-conversion-change', data.conversion_change, '%');
         }
-        
+
         function animateValue(elementId, newValue) {
             const el = document.getElementById(elementId);
             const current = parseInt(el.textContent) || 0;
@@ -414,7 +414,7 @@
             const steps = 20;
             const stepValue = diff / steps;
             let step = 0;
-            
+
             const interval = setInterval(() => {
                 step++;
                 el.textContent = Math.round(current + stepValue * step);
@@ -424,38 +424,38 @@
                 }
             }, 20);
         }
-        
+
         function updateChange(elementId, value, suffix = '%') {
             const el = document.getElementById(elementId);
             const num = parseFloat(value);
             el.textContent = `${num >= 0 ? '+' : ''}${value}${suffix}`;
             el.className = `metric-change ${num >= 0 ? 'positive' : 'negative'}`;
         }
-        
+
         async function updateChart() {
             if (!refreshEnabled) return;
-            
+
             const period = document.getElementById('chart-period').value;
-            
+
             try {
                 const data = await api._request('data', {
                     action: 'query',
                     table: 'traffic',
                     period: period
                 });
-                
+
                 updateChartData(data);
             } catch (e) {
                 // Generate sample data
                 updateChartData(generateSampleChartData());
             }
         }
-        
+
         function generateSampleChartData() {
             const labels = [];
             const visitors = [];
             const pageviews = [];
-            
+
             for (let i = 23; i >= 0; i--) {
                 const hour = new Date();
                 hour.setHours(hour.getHours() - i);
@@ -463,10 +463,10 @@
                 visitors.push(Math.floor(Math.random() * 200) + 50);
                 pageviews.push(Math.floor(Math.random() * 500) + 100);
             }
-            
+
             return { labels, visitors, pageviews };
         }
-        
+
         function updateChartData(data) {
             if (!chart) {
                 const ctx = document.getElementById('traffic-chart').getContext('2d');
@@ -504,10 +504,10 @@
                 chart.update('none');
             }
         }
-        
+
         async function updateOrders() {
             if (!refreshEnabled) return;
-            
+
             try {
                 const result = await api.data('orders').list({ limit: 10, sort: '-created_at' });
                 renderOrdersTable(result.items || generateSampleOrders());
@@ -515,11 +515,11 @@
                 renderOrdersTable(generateSampleOrders());
             }
         }
-        
+
         function generateSampleOrders() {
             const products = ['E-book Python', 'Kurs React', 'Hosting PRO', 'Domena .pl'];
             const statuses = ['completed', 'pending', 'processing'];
-            
+
             return Array.from({ length: 5 }, (_, i) => ({
                 id: `ORD-${1000 + Math.floor(Math.random() * 9000)}`,
                 customer: `Klient ${Math.floor(Math.random() * 100)}`,
@@ -529,7 +529,7 @@
                 created_at: new Date(Date.now() - Math.random() * 3600000)
             }));
         }
-        
+
         function renderOrdersTable(orders) {
             const tbody = document.getElementById('orders-table');
             tbody.innerHTML = orders.map(order => `
@@ -543,12 +543,12 @@
                 </tr>
             `).join('');
         }
-        
+
         function addOrderToTable(order, highlight = false) {
             const tbody = document.getElementById('orders-table');
             const row = document.createElement('tr');
             if (highlight) row.style.background = '#e8f5e9';
-            
+
             row.innerHTML = `
                 <td><code>${order.id}</code></td>
                 <td>${order.customer}</td>
@@ -557,15 +557,15 @@
                 <td><span class="badge bg-${getStatusColor(order.status)}">${order.status}</span></td>
                 <td>${formatTime(order.created_at)}</td>
             `;
-            
+
             tbody.insertBefore(row, tbody.firstChild);
-            
+
             // Remove old rows
             while (tbody.children.length > 10) {
                 tbody.removeChild(tbody.lastChild);
             }
         }
-        
+
         async function updateWeather() {
             try {
                 const data = await api._request('weather', {
@@ -573,7 +573,7 @@
                     lat: 52.2297,
                     lon: 21.0122
                 });
-                
+
                 updateWeatherDisplay(data);
             } catch (e) {
                 // Sample data
@@ -587,7 +587,7 @@
                 });
             }
         }
-        
+
         function updateWeatherDisplay(data) {
             document.getElementById('weather-temp').textContent = `${data.temp}°`;
             document.getElementById('weather-desc').textContent = data.description;
@@ -596,7 +596,7 @@
             document.getElementById('weather-feels').textContent = data.feels_like;
             document.getElementById('weather-location').textContent = data.location;
         }
-        
+
         async function updateServers() {
             try {
                 const data = await api._request('servers', { action: 'status' });
@@ -605,7 +605,7 @@
                 renderServerStatus(generateSampleServers());
             }
         }
-        
+
         function generateSampleServers() {
             return [
                 { name: 'Web Server', status: 'online', cpu: Math.floor(Math.random() * 50) + 10, memory: Math.floor(Math.random() * 40) + 30 },
@@ -614,7 +614,7 @@
                 { name: 'Queue', status: 'online', cpu: Math.floor(Math.random() * 40) + 10, memory: Math.floor(Math.random() * 35) + 25 }
             ];
         }
-        
+
         function renderServerStatus(servers) {
             const container = document.getElementById('server-status');
             container.innerHTML = servers.map(server => `
@@ -629,7 +629,7 @@
                 </div>
             `).join('');
         }
-        
+
         async function updateStockTicker() {
             try {
                 const data = await api._request('stocks', { action: 'ticker' });
@@ -638,7 +638,7 @@
                 renderStockTicker(generateSampleStocks());
             }
         }
-        
+
         function generateSampleStocks() {
             const stocks = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'AMD'];
             return stocks.map(symbol => ({
@@ -647,25 +647,25 @@
                 change: (Math.random() * 10 - 5).toFixed(2)
             }));
         }
-        
+
         function renderStockTicker(stocks) {
             const container = document.getElementById('stock-ticker');
             const items = stocks.map(s => `
                 <span class="ticker-item">
-                    ${s.symbol}: $${s.price} 
+                    ${s.symbol}: $${s.price}
                     <span style="color: ${parseFloat(s.change) >= 0 ? '#0f0' : '#f00'}">
                         ${parseFloat(s.change) >= 0 ? '▲' : '▼'} ${Math.abs(s.change)}%
                     </span>
                 </span>
             `).join('');
-            
+
             container.innerHTML = items + items; // Duplicate for seamless scroll
         }
-        
+
         // =================================================================
         // Helpers
         // =================================================================
-        
+
         function getStatusColor(status) {
             const colors = {
                 completed: 'success',
@@ -675,19 +675,19 @@
             };
             return colors[status] || 'secondary';
         }
-        
+
         function formatTime(date) {
-            return new Date(date).toLocaleTimeString('pl-PL', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+            return new Date(date).toLocaleTimeString('pl-PL', {
+                hour: '2-digit',
+                minute: '2-digit'
             });
         }
-        
+
         function updateLastRefresh() {
-            document.getElementById('last-update').textContent = 
+            document.getElementById('last-update').textContent =
                 `Ostatnia aktualizacja: ${new Date().toLocaleTimeString('pl-PL')}`;
         }
-        
+
         function setupCountdown() {
             let countdown = 5;
             setInterval(() => {
@@ -696,22 +696,22 @@
                 document.getElementById('refresh-countdown').textContent = countdown;
             }, 1000);
         }
-        
+
         function showNotification(message) {
             if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification('IntentForge Dashboard', { body: message });
             }
         }
-        
+
         // =================================================================
         // Controls
         // =================================================================
-        
+
         document.getElementById('toggle-refresh').addEventListener('click', function() {
             refreshEnabled = !refreshEnabled;
             this.textContent = refreshEnabled ? '⏸️ Wstrzymaj' : '▶️ Wznów';
             this.className = `btn btn-sm ${refreshEnabled ? 'btn-outline-primary' : 'btn-primary'}`;
-            
+
             if (!refreshEnabled) {
                 api.image.stopRefresh('#stock-chart');
                 api.image.stopRefresh('#heatmap');
@@ -720,14 +720,14 @@
                 setupImageRefresh();
             }
         });
-        
+
         document.getElementById('chart-period').addEventListener('change', updateChart);
-        
+
         // Request notification permission
         if ('Notification' in window) {
             Notification.requestPermission();
         }
-        
+
         // =================================================================
         // Start
         // =================================================================

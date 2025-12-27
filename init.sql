@@ -109,8 +109,8 @@ CREATE TRIGGER update_schema_registry_updated_at
 CREATE OR REPLACE FUNCTION increment_cache_hit()
 RETURNS TRIGGER AS $$
 BEGIN
-    UPDATE intent_cache 
-    SET hit_count = hit_count + 1 
+    UPDATE intent_cache
+    SET hit_count = hit_count + 1
     WHERE fingerprint = NEW.fingerprint;
     RETURN NEW;
 END;
@@ -133,7 +133,7 @@ ON CONFLICT (name) DO NOTHING;
 
 -- Cache statistics
 CREATE OR REPLACE VIEW cache_stats AS
-SELECT 
+SELECT
     intent_type,
     target_platform,
     COUNT(*) as total_cached,
@@ -146,7 +146,7 @@ GROUP BY intent_type, target_platform;
 
 -- Daily usage
 CREATE OR REPLACE VIEW daily_usage AS
-SELECT 
+SELECT
     DATE(created_at) as date,
     intent_type,
     COUNT(*) as requests,

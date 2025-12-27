@@ -33,7 +33,7 @@
 
 ```bash
 # Klonuj repo
-git clone https://github.com/softreck/intentforge
+git clone https://github.com/wronai/intent
 cd intentforge
 
 # Konfiguracja
@@ -41,7 +41,7 @@ cp .env.complete.example .env
 # Edytuj .env - ustaw co najmniej ANTHROPIC_API_KEY i SMTP_*
 
 # Uruchom
-docker-compose up -d
+docker-compose up --build
 
 # Otwórz demo
 open http://localhost/examples/usecases/01_contact_form.html
@@ -144,7 +144,7 @@ files = form("contact", [
 
 ```javascript
 // Automatyczna (z data-attributes)
-<script src="intentforge.js" 
+<script src="intentforge.js"
         data-broker="ws://localhost:9001"
         data-auto-bind="true">
 </script>
@@ -326,7 +326,7 @@ setInterval(async () => {
     const result = await api.camera('front-door').analyze({
         detect: ['motion', 'person', 'vehicle']
     });
-    
+
     if (result.detections.length > 0) {
         handleDetections(result.detections);
     }
@@ -485,7 +485,7 @@ make help             # Lista komend
 
 ## 📞 Wsparcie
 
-- **GitHub Issues:** https://github.com/softreck/intentforge/issues
+- **GitHub Issues:** https://github.com/wronai/intent/issues
 - **Dokumentacja:** https://intentforge.readthedocs.io
 - **Email:** support@softreck.dev
 

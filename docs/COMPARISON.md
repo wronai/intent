@@ -83,7 +83,7 @@
 **Przykład:**
 ```html
 <!-- Monitoring kamery z AI -->
-<intent-camera 
+<intent-camera
     source="rtsp://192.168.1.100/stream"
     refresh="1000"
     detect="person,vehicle"
@@ -259,6 +259,6 @@
 ## 📚 Linki
 
 - **Dokumentacja:** https://docs.intentforge.dev
-- **GitHub:** https://github.com/softreck/intentforge
+- **GitHub:** https://github.com/wronai/intent
 - **Discord:** https://discord.gg/intentforge
 - **Examples:** https://examples.intentforge.dev

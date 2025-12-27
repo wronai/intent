@@ -1,26 +1,25 @@
 # IntentForge - Docker Compose with LiteLLM and Ollama Support
-# 
+#
 # Usage:
 #   docker-compose up -d                    # Default (uses Anthropic API)
 #   docker-compose --profile ollama up -d   # With local Ollama
 #   docker-compose --profile litellm up -d  # With LiteLLM proxy
 #   docker-compose --profile full up -d     # All services
 
-version: "3.9"
-
 services:
   # ==========================================================================
   # Core Services
   # ==========================================================================
-  
+
   intentforge:
     build:
-      context: .
-      dockerfile: docker/Dockerfile
+      context: ..
+      dockerfile: Dockerfile
+      target: runtime
     container_name: intentforge-server
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-8000}:${APP_PORT:-8000}"
+      - "${APP_PORT_EXTERNAL:-8001}:${APP_PORT:-8000}"
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-production}
       - HOST=${APP_HOST:-0.0.0.0}
@@ -40,7 +39,7 @@ services:
       - OLLAMA_HOST=${OLLAMA_HOST:-http://ollama:${OLLAMA_PORT:-11434}}
       - LITELLM_API_BASE=${LITELLM_API_BASE:-http://litellm:${LITELLM_PORT:-4000}}
     env_file:
-      - .env
+      - ../.env
     depends_on:
       postgres:
         condition: service_healthy
@@ -49,20 +48,34 @@ services:
       mosquitto:
         condition: service_started
     volumes:
-      - ./logs:/app/logs
-      - ./uploads:/app/uploads
+      - ../logs:/app/logs
+      - ../uploads:/app/uploads
     networks:
       - intentforge-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${APP_PORT:-8000}/health"]
+      test: ["CMD", "python", "-c", "import os,urllib.request; urllib.request.urlopen('http://localhost:%s/health' % os.getenv('PORT','8000')).read()"]
       interval: 30s
       timeout: 10s
       retries: 3
 
+  worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: worker
+    container_name: intentforge-worker
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    depends_on:
+      - intentforge
+    networks:
+      - intentforge-network
+
   # ==========================================================================
   # MQTT Broker
   # ==========================================================================
-  
+
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: intentforge-mqtt
@@ -71,7 +84,7 @@ services:
       - "${MQTT_PORT_EXTERNAL:-1883}:${MQTT_PORT:-1883}"
       - "${MQTT_WEBSOCKET_PORT_EXTERNAL:-9001}:${MQTT_WEBSOCKET_PORT:-9001}"
     volumes:
-      - ./docker/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto-data:/mosquitto/data
     networks:
       - intentforge-network
@@ -79,7 +92,7 @@ services:
   # ==========================================================================
   # PostgreSQL
   # ==========================================================================
-  
+
   postgres:
     image: postgres:16-alpine
     container_name: intentforge-db
@@ -92,7 +105,7 @@ services:
       - POSTGRES_DB=${DB_NAME:-intentforge}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ../init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - intentforge-network
     healthcheck:
@@ -104,7 +117,7 @@ services:
   # ==========================================================================
   # Redis
   # ==========================================================================
-  
+
   redis:
     image: redis:7-alpine
     container_name: intentforge-cache
@@ -125,7 +138,7 @@ services:
   # ==========================================================================
   # Nginx (Frontend)
   # ==========================================================================
-  
+
   nginx:
     image: nginx:alpine
     container_name: intentforge-web
@@ -133,8 +146,9 @@ services:
     ports:
       - "${WEB_PORT:-80}:80"
     volumes:
-      - ./frontend:/usr/share/nginx/html:ro
-      - ./docker/config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../frontend:/usr/share/nginx/html/frontend:ro
+      - ../examples:/usr/share/nginx/html/examples:ro
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - intentforge
       - mosquitto
@@ -144,7 +158,7 @@ services:
   # ==========================================================================
   # Ollama (Local LLM) - Optional
   # ==========================================================================
-  
+
 #  ollama:
 #    image: ollama/ollama:latest
 #    container_name: intentforge-ollama
@@ -170,7 +184,7 @@ services:
   # ==========================================================================
   # LiteLLM Proxy - Optional (supports 100+ models)
   # ==========================================================================
-  
+
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
     container_name: intentforge-litellm
@@ -187,7 +201,7 @@ services:
       # Ollama connection
       - OLLAMA_API_BASE=http://ollama:${OLLAMA_PORT:-11434}
     volumes:
-      - ./docker/config/litellm_config.yaml:/app/config.yaml:ro
+      - ./config/litellm_config.yaml:/app/config.yaml:ro
     command: ["--config", "/app/config.yaml", "--port", "${LITELLM_PORT:-4000}"]
     networks:
       - intentforge-network
@@ -197,7 +211,7 @@ services:
   # ==========================================================================
   # Development Tools
   # ==========================================================================
-  
+
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: intentforge-pgadmin

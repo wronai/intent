@@ -1,6 +1,6 @@
 /**
  * IntentForge.js - Minimalistyczne SDK dla frontendu
- * 
+ *
  * Użycie:
  *   <script src="https://cdn.intentforge.io/v1/intentforge.min.js"></script>
  *   <script>
@@ -21,20 +21,20 @@
     // ==========================================================================
     // Core Client
     // ==========================================================================
-    
+
     class IntentForgeClient {
         constructor(options = {}) {
             this.broker = options.broker || DEFAULT_BROKER;
             this.api = options.api || DEFAULT_API;
             this.clientId = options.clientId || `if-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
             this.debug = options.debug || false;
-            
+
             this.mqtt = null;
             this.connected = false;
             this.pending = new Map();
             this.subscriptions = new Map();
             this.eventHandlers = new Map();
-            
+
             // Lazy-load MQTT
             this._mqttPromise = null;
         }
@@ -42,21 +42,21 @@
         // ----------------------------------------------------------------------
         // Connection Management
         // ----------------------------------------------------------------------
-        
+
         async connect() {
             if (this.connected) return this;
-            
+
             await this._loadMQTT();
-            
+
             return new Promise((resolve, reject) => {
                 const url = new URL(this.broker);
-                
+
                 this.mqtt = new Paho.MQTT.Client(
                     url.hostname,
                     parseInt(url.port) || 9001,
                     this.clientId
                 );
-                
+
                 this.mqtt.onConnectionLost = (res) => {
                     this.connected = false;
                     this._emit('disconnect', res);
@@ -64,9 +64,9 @@
                         setTimeout(() => this.connect(), 3000);
                     }
                 };
-                
+
                 this.mqtt.onMessageArrived = (msg) => this._handleMessage(msg);
-                
+
                 this.mqtt.connect({
                     onSuccess: () => {
                         this.connected = true;
@@ -84,7 +84,7 @@
         async _loadMQTT() {
             if (typeof Paho !== 'undefined') return;
             if (this._mqttPromise) return this._mqttPromise;
-            
+
             this._mqttPromise = new Promise((resolve, reject) => {
                 const script = document.createElement('script');
                 script.src = 'https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js';
@@ -92,17 +92,17 @@
                 script.onerror = reject;
                 document.head.appendChild(script);
             });
-            
+
             return this._mqttPromise;
         }
 
         // ----------------------------------------------------------------------
         // Form Handling - Najprostsze API
         // ----------------------------------------------------------------------
-        
+
         /**
          * Obsługa formularza - automatyczne generowanie backendu
-         * 
+         *
          * @example
          * api.form('contact').submit({name: 'Jan', email: 'jan@example.com'});
          * api.form('newsletter').onSuccess(data => console.log('Subscribed!'));
@@ -113,25 +113,25 @@
 
         /**
          * Auto-bind wszystkich formularzy na stronie
-         * 
+         *
          * @example
          * api.autoBindForms(); // Wszystkie <form data-intent="...">
          */
         autoBindForms() {
             document.querySelectorAll('form[data-intent]').forEach(form => {
                 const handler = this.form(form.id || form.dataset.intent);
-                
+
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const data = Object.fromEntries(new FormData(form));
-                    
+
                     try {
                         form.classList.add('if-loading');
                         const result = await handler.submit(data);
                         form.classList.remove('if-loading');
                         form.classList.add('if-success');
                         form.dispatchEvent(new CustomEvent('if:success', { detail: result }));
-                        
+
                         if (form.dataset.intentReset !== 'false') {
                             form.reset();
                         }
@@ -142,17 +142,17 @@
                     }
                 });
             });
-            
+
             return this;
         }
 
         // ----------------------------------------------------------------------
         // Payment Integration
         // ----------------------------------------------------------------------
-        
+
         /**
          * Płatności - PayPal, Stripe, etc.
-         * 
+         *
          * @example
          * api.payment.checkout({
          *   amount: 29.99,
@@ -168,10 +168,10 @@
         // ----------------------------------------------------------------------
         // Email
         // ----------------------------------------------------------------------
-        
+
         /**
          * Wysyłanie emaili
-         * 
+         *
          * @example
          * api.email.send({
          *   to: 'customer@example.com',
@@ -186,10 +186,10 @@
         // ----------------------------------------------------------------------
         // Storage / Database
         // ----------------------------------------------------------------------
-        
+
         /**
          * Operacje na danych
-         * 
+         *
          * @example
          * api.data('products').list({limit: 10});
          * api.data('orders').create({...});
@@ -202,10 +202,10 @@
         // ----------------------------------------------------------------------
         // Real-time Events
         // ----------------------------------------------------------------------
-        
+
         /**
          * Subskrypcja zdarzeń w czasie rzeczywistym
-         * 
+         *
          * @example
          * api.on('camera:motion', data => alert('Motion detected!'));
          * api.on('order:new', data => updateDashboard(data));
@@ -231,10 +231,10 @@
         // ----------------------------------------------------------------------
         // Image / Camera
         // ----------------------------------------------------------------------
-        
+
         /**
          * Operacje na obrazach i kamerach
-         * 
+         *
          * @example
          * api.camera('rtsp://...').analyze();
          * api.camera('front-door').onMotion(data => notify(data));
@@ -251,10 +251,10 @@
         // ----------------------------------------------------------------------
         // Code Generation
         // ----------------------------------------------------------------------
-        
+
         /**
          * Generowanie kodu
-         * 
+         *
          * @example
          * const code = await api.generate('Create REST API for products');
          */
@@ -270,7 +270,7 @@
         // ----------------------------------------------------------------------
         // Internal Methods
         // ----------------------------------------------------------------------
-        
+
         async _request(action, data, timeout = 30000) {
             // Try REST first, fallback to MQTT
             try {
@@ -279,20 +279,20 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
+
                 if (response.ok) {
                     return response.json();
                 }
             } catch (e) {
                 this._log('REST failed, trying MQTT', e);
             }
-            
+
             // MQTT fallback
             if (!this.connected) await this.connect();
-            
+
             return new Promise((resolve, reject) => {
                 const requestId = this._uuid();
-                
+
                 this.pending.set(requestId, {
                     resolve,
                     reject,
@@ -301,7 +301,7 @@
                         reject(new Error('Request timeout'));
                     }, timeout)
                 });
-                
+
                 this._publish(`${TOPIC_PREFIX}/${action}/request/${this.clientId}`, {
                     request_id: requestId,
                     ...data
@@ -313,12 +313,12 @@
             if (!this.connected) {
                 throw new Error('Not connected');
             }
-            
+
             const message = new Paho.MQTT.Message(JSON.stringify(payload));
             message.destinationName = topic;
             message.qos = 1;
             this.mqtt.send(message);
-            
+
             this._log('Published', topic, payload);
         }
 
@@ -334,15 +334,15 @@
             try {
                 const payload = JSON.parse(msg.payloadString);
                 const topic = msg.destinationName;
-                
+
                 this._log('Received', topic, payload);
-                
+
                 // Handle pending requests
                 if (payload.request_id && this.pending.has(payload.request_id)) {
                     const pending = this.pending.get(payload.request_id);
                     clearTimeout(pending.timeout);
                     this.pending.delete(payload.request_id);
-                    
+
                     if (payload.success !== false) {
                         pending.resolve(payload);
                     } else {
@@ -350,7 +350,7 @@
                     }
                     return;
                 }
-                
+
                 // Handle events
                 const eventMatch = topic.match(/events\/[^/]+\/(.+)$/);
                 if (eventMatch) {
@@ -359,7 +359,7 @@
                         this.eventHandlers.get(event).forEach(cb => cb(payload));
                     }
                 }
-                
+
             } catch (e) {
                 this._log('Error handling message', e);
             }
@@ -386,7 +386,7 @@
     // ==========================================================================
     // Handlers
     // ==========================================================================
-    
+
     class FormHandler {
         constructor(client, formId) {
             this.client = client;
@@ -402,7 +402,7 @@
                     action: 'submit',
                     data: data
                 });
-                
+
                 if (this._onSuccess) this._onSuccess(result);
                 return result;
             } catch (error) {
@@ -569,9 +569,9 @@
         startStream(elementId, options = {}) {
             const element = document.getElementById(elementId);
             if (!element) return this;
-            
+
             const refresh = options.interval || 1000;
-            
+
             const update = async () => {
                 try {
                     const result = await this.snapshot();
@@ -582,10 +582,10 @@
                     console.error('Stream error', e);
                 }
             };
-            
+
             update();
             this._streamInterval = setInterval(update, refresh);
-            
+
             return this;
         }
 
@@ -605,30 +605,30 @@
 
         /**
          * Auto-refresh obrazu na stronie
-         * 
+         *
          * @param {string} selector - CSS selector
          * @param {number} interval - Interwał w ms
          * @param {string|function} source - URL lub funkcja zwracająca URL
          */
         refresh(selector, interval, source) {
             const elements = document.querySelectorAll(selector);
-            
+
             elements.forEach(el => {
-                const getUrl = typeof source === 'function' 
-                    ? source 
+                const getUrl = typeof source === 'function'
+                    ? source
                     : () => source || el.dataset.src || el.src;
-                
+
                 const update = () => {
                     const url = getUrl();
                     const separator = url.includes('?') ? '&' : '?';
                     el.src = `${url}${separator}_t=${Date.now()}`;
                 };
-                
+
                 update();
                 const id = setInterval(update, interval);
                 this._intervals.set(el, id);
             });
-            
+
             return this;
         }
 
@@ -655,13 +655,13 @@
     // ==========================================================================
     // Static Factory
     // ==========================================================================
-    
+
     const IntentForge = {
         VERSION,
-        
+
         /**
          * Utwórz i połącz klienta
-         * 
+         *
          * @example
          * const api = await IntentForge.connect('ws://localhost:9001');
          */
@@ -670,40 +670,40 @@
             await client.connect();
             return client;
         },
-        
+
         /**
          * Utwórz klienta bez automatycznego połączenia
          */
         create(options = {}) {
             return new IntentForgeClient(options);
         },
-        
+
         /**
          * Auto-inicjalizacja z data-attributes
-         * 
-         * <script src="intentforge.js" 
+         *
+         * <script src="intentforge.js"
          *         data-broker="ws://localhost:9001"
          *         data-auto-bind="true">
          */
         async autoInit() {
-            const script = document.currentScript || 
+            const script = document.currentScript ||
                 document.querySelector('script[src*="intentforge"]');
-            
+
             if (!script) return null;
-            
+
             const broker = script.dataset.broker || DEFAULT_BROKER;
             const autoBind = script.dataset.autoBind !== 'false';
             const debug = script.dataset.debug === 'true';
-            
+
             const client = await this.connect(broker, { debug });
-            
+
             if (autoBind) {
                 client.autoBindForms();
             }
-            
+
             // Expose globally
             global.intentForge = client;
-            
+
             return client;
         }
     };
@@ -711,7 +711,7 @@
     // ==========================================================================
     // Export
     // ==========================================================================
-    
+
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = IntentForge;
     } else {

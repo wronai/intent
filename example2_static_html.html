@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IntentForge - Example 2: Static HTML + MQTT</title>
-    
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.css" rel="stylesheet">
-    
+
     <style>
         .intent-processing { opacity: 0.6; pointer-events: none; }
         .code-output { max-height: 400px; overflow: auto; }
@@ -37,16 +37,16 @@
                 <div class="card shadow">
                     <div class="card-body">
                         <h5 class="card-title">💬 Opisz co chcesz wygenerować</h5>
-                        
+
                         <div class="mb-3">
-                            <textarea 
-                                id="intent-input" 
-                                class="form-control" 
+                            <textarea
+                                id="intent-input"
+                                class="form-control"
                                 rows="3"
                                 placeholder="np. Stwórz endpoint REST do zarządzania produktami z paginacją i wyszukiwaniem"
                             ></textarea>
                         </div>
-                        
+
                         <div class="row g-3 mb-3">
                             <div class="col-md-4">
                                 <select id="platform-select" class="form-select">
@@ -71,7 +71,7 @@
                                 </button>
                             </div>
                         </div>
-                        
+
                         <!-- Progress -->
                         <div id="progress-bar" class="progress d-none" style="height: 3px;">
                             <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
@@ -86,7 +86,7 @@
             <div class="col-12">
                 <h5 class="mb-3">⚡ Szybkie przykłady (kliknij aby wypełnić)</h5>
             </div>
-            
+
             <div class="col-md-4 mb-3">
                 <div class="card example-card h-100" data-intent="Create REST API for user management with JWT authentication and role-based access" data-type="api_endpoint">
                     <div class="card-body">
@@ -95,7 +95,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-md-4 mb-3">
                 <div class="card example-card h-100" data-intent="Create PostgreSQL schema for e-commerce with products, orders, and customers tables with proper indexes and relationships" data-type="database_schema">
                     <div class="card-body">
@@ -104,7 +104,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-md-4 mb-3">
                 <div class="card example-card h-100" data-intent="Create MQTT handler for IoT temperature sensor that reads DHT22 sensor and publishes data every 5 seconds" data-type="firmware_function" data-platform="esp32_micropython">
                     <div class="card-body">
@@ -154,7 +154,7 @@
                 <h4 class="mb-3">📋 Przykład: Automatyczna obsługa formularza</h4>
                 <p class="text-muted">Ten formularz automatycznie wysyła dane przez MQTT i generuje backend</p>
             </div>
-            
+
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">Formularz kontaktowy</div>
@@ -180,7 +180,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">Wygenerowany backend</div>
@@ -198,19 +198,19 @@
         <div class="container text-center">
             <p>IntentForge - NLP-driven Code Generation via MQTT</p>
             <small class="text-muted">
-                Połączenie: <span id="mqtt-broker">ws://localhost:9001</span> | 
+                Połączenie: <span id="mqtt-broker">ws://localhost:9001</span> |
                 Topic: <span id="mqtt-topic">intentforge/intent/request/*</span>
             </small>
         </div>
     </footer>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/paho-mqtt@1.0.1/paho-mqtt.min.js"></script>
+    <script src="/static/js/paho-mqtt.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-sql.min.js"></script>
-    
+
     <script>
         // =================================================================
         // MQTT Configuration
@@ -219,30 +219,30 @@
         const MQTT_PORT = 9001;
         const CLIENT_ID = `web-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const TOPIC_PREFIX = 'intentforge';
-        
+
         let client = null;
         let connected = false;
         const pendingRequests = new Map();
-        
+
         // =================================================================
         // MQTT Connection
         // =================================================================
         function connectMQTT() {
             client = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, CLIENT_ID);
-            
+
             client.onConnectionLost = (response) => {
                 connected = false;
                 updateStatus('disconnected');
                 setTimeout(connectMQTT, 5000);
             };
-            
+
             client.onMessageArrived = handleMessage;
-            
+
             client.connect({
                 onSuccess: () => {
                     connected = true;
                     updateStatus('connected');
-                    
+
                     // Subscribe to responses
                     client.subscribe(`${TOPIC_PREFIX}/intent/response/${CLIENT_ID}`);
                     client.subscribe(`${TOPIC_PREFIX}/intent/status/${CLIENT_ID}`);
@@ -254,7 +254,7 @@
                 }
             });
         }
-        
+
         function updateStatus(status) {
             const badge = document.getElementById('mqtt-status');
             const statusMap = {
@@ -267,19 +267,19 @@
             badge.className = `badge ${s.class}`;
             badge.textContent = s.text;
         }
-        
+
         // =================================================================
         // Message Handling
         // =================================================================
         function handleMessage(message) {
             try {
                 const payload = JSON.parse(message.payloadString);
-                
+
                 if (payload.request_id && pendingRequests.has(payload.request_id)) {
                     const request = pendingRequests.get(payload.request_id);
                     clearTimeout(request.timeout);
                     pendingRequests.delete(payload.request_id);
-                    
+
                     if (payload.success) {
                         request.resolve(payload);
                     } else {
@@ -290,7 +290,7 @@
                 console.error('Error handling message:', e);
             }
         }
-        
+
         // =================================================================
         // Send Intent
         // =================================================================
@@ -300,9 +300,9 @@
                     reject(new Error('Not connected to MQTT broker'));
                     return;
                 }
-                
+
                 const requestId = crypto.randomUUID();
-                
+
                 const intent = {
                     request_id: requestId,
                     description: description,
@@ -311,7 +311,7 @@
                     context: options.context || {},
                     constraints: options.constraints || []
                 };
-                
+
                 // Store pending request
                 pendingRequests.set(requestId, {
                     resolve,
@@ -321,16 +321,16 @@
                         reject(new Error('Request timeout (60s)'));
                     }, 60000)
                 });
-                
+
                 // Send message
                 const message = new Paho.MQTT.Message(JSON.stringify(intent));
                 message.destinationName = `${TOPIC_PREFIX}/intent/request/${CLIENT_ID}`;
                 message.qos = 1;
-                
+
                 client.send(message);
             });
         }
-        
+
         // =================================================================
         // UI Handlers
         // =================================================================
@@ -340,43 +340,43 @@
                 alert('Wprowadź opis tego co chcesz wygenerować');
                 return;
             }
-            
+
             const platform = document.getElementById('platform-select').value;
             const intentType = document.getElementById('type-select').value;
-            
+
             const btn = document.getElementById('generate-btn');
             const progress = document.getElementById('progress-bar');
-            
+
             btn.disabled = true;
             btn.innerHTML = '⏳ Generowanie...';
             progress.classList.remove('d-none');
-            
+
             const startTime = Date.now();
-            
+
             try {
                 const result = await sendIntent(description, {
                     intentType: intentType,
                     targetPlatform: platform
                 });
-                
+
                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-                
+
                 // Update output
                 const codeOutput = document.getElementById('code-output');
                 codeOutput.textContent = result.generated_code || '// No code generated';
                 codeOutput.className = `language-${result.language || 'python'}`;
                 Prism.highlightElement(codeOutput);
-                
+
                 // Update badges
                 document.getElementById('code-language').textContent = result.language || 'unknown';
                 document.getElementById('code-time').textContent = `${elapsed}s`;
                 document.getElementById('copy-btn').disabled = false;
-                
+
                 // Show validation
                 if (result.validation_passed !== undefined) {
                     showValidation(result);
                 }
-                
+
             } catch (error) {
                 alert('Błąd: ' + error.message);
             } finally {
@@ -385,7 +385,7 @@
                 progress.classList.add('d-none');
             }
         });
-        
+
         // Copy button
         document.getElementById('copy-btn').addEventListener('click', () => {
             const code = document.getElementById('code-output').textContent;
@@ -395,7 +395,7 @@
                 setTimeout(() => btn.textContent = '📋 Kopiuj', 2000);
             });
         });
-        
+
         // Example cards
         document.querySelectorAll('.example-card').forEach(card => {
             card.addEventListener('click', () => {
@@ -408,7 +408,7 @@
                 }
             });
         });
-        
+
         // Form backend generation
         document.getElementById('gen-form-backend').addEventListener('click', async () => {
             const form = document.getElementById('contact-form');
@@ -419,11 +419,11 @@
                     type: el.type === 'textarea' ? 'textarea' : el.type,
                     required: el.required
                 }));
-            
+
             const btn = document.getElementById('gen-form-backend');
             btn.disabled = true;
             btn.textContent = '⏳ Generowanie...';
-            
+
             try {
                 const result = await sendIntent(
                     `Create FastAPI endpoint to handle form submission with fields: ${fields.map(f => f.name).join(', ')}. Store data in PostgreSQL with proper validation.`,
@@ -433,11 +433,11 @@
                         context: { fields, form_id: 'contact-form' }
                     }
                 );
-                
+
                 const output = document.getElementById('form-backend-output');
                 output.textContent = result.generated_code || '// No code generated';
                 Prism.highlightElement(output);
-                
+
             } catch (error) {
                 alert('Błąd: ' + error.message);
             } finally {
@@ -445,14 +445,14 @@
                 btn.textContent = 'Generuj backend dla tego formularza';
             }
         });
-        
+
         // Contact form submission
         document.getElementById('contact-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
-            
+
             // Send via MQTT
             const message = new Paho.MQTT.Message(JSON.stringify({
                 action: 'create',
@@ -460,7 +460,7 @@
                 request_id: crypto.randomUUID()
             }));
             message.destinationName = `${TOPIC_PREFIX}/forms/contact`;
-            
+
             if (connected) {
                 client.send(message);
                 alert('Wiadomość wysłana przez MQTT!');
@@ -469,28 +469,28 @@
                 alert('Brak połączenia z MQTT');
             }
         });
-        
+
         function showValidation(result) {
             const container = document.getElementById('validation-results');
             const content = document.getElementById('validation-content');
-            
+
             container.classList.remove('d-none');
-            
-            const status = result.validation_passed 
+
+            const status = result.validation_passed
                 ? '<span class="badge bg-success">✓ Passed</span>'
                 : '<span class="badge bg-danger">✗ Failed</span>';
-            
-            const errors = result.validation_errors?.length 
+
+            const errors = result.validation_errors?.length
                 ? `<ul class="text-danger">${result.validation_errors.map(e => `<li>${e}</li>`).join('')}</ul>`
                 : '';
-            
+
             content.innerHTML = `
                 <p>Status walidacji: ${status}</p>
                 ${errors}
                 <small class="text-muted">Czas przetwarzania: ${result.processing_time_ms?.toFixed(2) || '?'}ms</small>
             `;
         }
-        
+
         // =================================================================
         // Initialize
         // =================================================================

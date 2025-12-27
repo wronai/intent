@@ -32,13 +32,13 @@
             <div class="row">
                 <div class="col-md-6">
                     <p>Cały backend (walidacja, email, baza danych) - bez pisania JavaScript!</p>
-                    
-                    <intent-form 
-                        action="contact" 
+
+                    <intent-form
+                        action="contact"
                         success-message="✅ Wiadomość wysłana!"
                         loading-text="Wysyłanie..."
                         reset="true">
-                        
+
                         <div class="mb-3">
                             <input type="email" name="email" class="form-control" placeholder="Email" required>
                         </div>
@@ -65,20 +65,20 @@
             <div class="row">
                 <div class="col-md-6">
                     <p>Integracja PayPal/Stripe - jeden tag HTML!</p>
-                    
+
                     <div class="d-flex gap-3 mb-3">
-                        <intent-pay 
-                            amount="49.99" 
-                            currency="PLN" 
+                        <intent-pay
+                            amount="49.99"
+                            currency="PLN"
                             product="ebook-python"
                             provider="paypal"
                             email="demo@example.com">
                             🛒 Kup za 49.99 PLN
                         </intent-pay>
-                        
-                        <intent-pay 
-                            amount="99.99" 
-                            currency="PLN" 
+
+                        <intent-pay
+                            amount="99.99"
+                            currency="PLN"
                             product="course-react"
                             provider="stripe">
                             💳 Kurs React 99.99 PLN
@@ -87,9 +87,9 @@
                 </div>
                 <div class="col-md-6">
                     <div class="code-example text-success">
-&lt;intent-pay 
-    amount="49.99" 
-    currency="PLN" 
+&lt;intent-pay
+    amount="49.99"
+    currency="PLN"
     product="ebook-python"
     provider="paypal"&gt;
     Kup za 49.99 PLN
@@ -105,17 +105,17 @@
             <div class="row">
                 <div class="col-md-6">
                     <p>Obraz odświeża się automatycznie co 5 sekund.</p>
-                    
-                    <intent-image 
-                        src="https://picsum.photos/400/200" 
+
+                    <intent-image
+                        src="https://picsum.photos/400/200"
                         refresh="5000"
                         style="max-width: 100%; border-radius: 8px;">
                     </intent-image>
                 </div>
                 <div class="col-md-6">
                     <div class="code-example text-success">
-&lt;intent-image 
-    src="/api/camera/snapshot" 
+&lt;intent-image
+    src="/api/camera/snapshot"
     refresh="5000"&gt;
 &lt;/intent-image&gt;
                     </div>
@@ -130,7 +130,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <p>Automatyczne pobieranie i wyświetlanie danych.</p>
-                    
+
                     <!-- Template for rendering -->
                     <template id="product-template">
                         <div class="card mb-2 bg-dark">
@@ -140,9 +140,9 @@
                             </div>
                         </div>
                     </template>
-                    
-                    <intent-data 
-                        table="products" 
+
+                    <intent-data
+                        table="products"
                         limit="5"
                         template="#product-template"
                         refresh="30000">
@@ -156,8 +156,8 @@
     &lt;/div&gt;
 &lt;/template&gt;
 
-&lt;intent-data 
-    table="products" 
+&lt;intent-data
+    table="products"
     limit="5"
     template="#product-template"&gt;
 &lt;/intent-data&gt;
@@ -172,17 +172,17 @@
             <div class="row">
                 <div class="col-md-6">
                     <p>Kompletne logowanie z social login.</p>
-                    
-                    <intent-auth 
-                        mode="login" 
+
+                    <intent-auth
+                        mode="login"
                         redirect="/dashboard"
                         providers="google,github">
                     </intent-auth>
                 </div>
                 <div class="col-md-6">
                     <div class="code-example text-success">
-&lt;intent-auth 
-    mode="login" 
+&lt;intent-auth
+    mode="login"
     redirect="/dashboard"
     providers="google,github"&gt;
 &lt;/intent-auth&gt;
@@ -197,14 +197,14 @@
             <div class="row">
                 <div class="col-md-6">
                     <p>Streaming z detekcją ruchu i alertami email.</p>
-                    
+
                     <div class="bg-dark p-3 rounded text-center">
                         <small class="text-muted">[Wymaga połączenia z kamerą RTSP]</small>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="code-example text-success">
-&lt;intent-camera 
+&lt;intent-camera
     source="rtsp://192.168.1.100/stream"
     refresh="1000"
     detect="person,vehicle"
@@ -232,9 +232,9 @@
                     <p>Możliwości</p>
                 </div>
             </div>
-            
+
             <hr class="my-4">
-            
+
             <h4>Wszystkie komponenty:</h4>
             <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
                 <span class="badge bg-success p-2">&lt;intent-form&gt;</span>
@@ -265,7 +265,7 @@
     </div>
 
     <!-- IntentForge Web Components -->
-    <script src="/frontend/components/intentforge-components.js" 
+    <script src="/frontend/components/intentforge-components.js"
             data-api="http://localhost:8000"
             data-debug="true">
     </script>

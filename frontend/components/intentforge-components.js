@@ -1,26 +1,26 @@
 /**
  * IntentForge Web Components
  * ==========================
- * 
+ *
  * Ultra-prostsze API - deklaratywne HTML bez pisania JavaScript!
- * 
+ *
  * Usage:
  *   <script src="intentforge-components.js"></script>
- *   
+ *
  *   <!-- Formularz - zero JS! -->
  *   <intent-form action="contact" success-message="Wysłano!">
  *     <input name="email" type="email" required>
  *     <textarea name="message" required></textarea>
  *   </intent-form>
- *   
+ *
  *   <!-- Płatność - jeden tag! -->
  *   <intent-pay amount="49.99" product="ebook" provider="paypal">
  *     Kup teraz
  *   </intent-pay>
- *   
+ *
  *   <!-- Auto-odświeżany obraz -->
  *   <intent-image src="/api/chart" refresh="5000"></intent-image>
- *   
+ *
  *   <!-- Dane z bazy -->
  *   <intent-data table="products" limit="10" template="#product-card"></intent-data>
  */
@@ -31,7 +31,7 @@
     // ==========================================================================
     // Configuration
     // ==========================================================================
-    
+
     const CONFIG = {
         apiUrl: document.currentScript?.dataset?.api || 'http://localhost:8000',
         debug: document.currentScript?.dataset?.debug === 'true'
@@ -52,7 +52,7 @@
     // ==========================================================================
     // <intent-form> - Formularz bez JS
     // ==========================================================================
-    
+
     class IntentForm extends HTMLElement {
         static get observedAttributes() {
             return ['action', 'success-message', 'error-message', 'redirect'];
@@ -70,7 +70,7 @@
             }
 
             const form = this.querySelector('form');
-            
+
             // Add submit button if missing
             if (!form.querySelector('[type="submit"]')) {
                 const btn = document.createElement('button');
@@ -104,7 +104,7 @@
 
                 // Collect form data
                 const formData = Object.fromEntries(new FormData(form));
-                
+
                 // Send to API
                 const result = await api('form', {
                     action: 'submit',
@@ -115,7 +115,7 @@
                 // Success
                 this.classList.remove('loading');
                 this.classList.add('success');
-                
+
                 this.showStatus(
                     this.getAttribute('success-message') || '✅ Wysłano pomyślnie!',
                     'success'
@@ -138,7 +138,7 @@
             } catch (error) {
                 this.classList.remove('loading');
                 this.classList.add('error');
-                
+
                 this.showStatus(
                     this.getAttribute('error-message') || '❌ Wystąpił błąd. Spróbuj ponownie.',
                     'error'
@@ -158,7 +158,7 @@
             this.statusEl.textContent = message;
             this.statusEl.className = `intent-status intent-status-${type}`;
             this.statusEl.style.display = 'block';
-            
+
             // Auto-hide after 5 seconds
             setTimeout(() => {
                 this.statusEl.style.display = 'none';
@@ -170,7 +170,7 @@
     // ==========================================================================
     // <intent-pay> - Płatność jednym tagiem
     // ==========================================================================
-    
+
     class IntentPay extends HTMLElement {
         static get observedAttributes() {
             return ['amount', 'currency', 'product', 'provider', 'email-field'];
@@ -208,13 +208,13 @@
         async handlePayment() {
             const emailField = this.getAttribute('email-field');
             let email = this.getAttribute('email');
-            
+
             // Get email from linked field
             if (emailField) {
                 const field = document.querySelector(emailField);
                 email = field?.value;
             }
-            
+
             // Prompt for email if not provided
             if (!email) {
                 email = prompt('Podaj email do wysłania potwierdzenia:');
@@ -251,7 +251,7 @@
     // ==========================================================================
     // <intent-image> - Auto-odświeżany obraz
     // ==========================================================================
-    
+
     class IntentImage extends HTMLElement {
         static get observedAttributes() {
             return ['src', 'refresh', 'placeholder'];
@@ -261,9 +261,9 @@
             this.img = document.createElement('img');
             this.img.style.cssText = 'max-width: 100%; height: auto;';
             this.appendChild(this.img);
-            
+
             this.updateImage();
-            
+
             const refresh = parseInt(this.getAttribute('refresh'));
             if (refresh > 0) {
                 this.interval = setInterval(() => this.updateImage(), refresh);
@@ -290,7 +290,7 @@
     // ==========================================================================
     // <intent-data> - Dane z bazy danych
     // ==========================================================================
-    
+
     class IntentData extends HTMLElement {
         static get observedAttributes() {
             return ['table', 'limit', 'sort', 'filter', 'template', 'refresh'];
@@ -298,7 +298,7 @@
 
         connectedCallback() {
             this.loadData();
-            
+
             const refresh = parseInt(this.getAttribute('refresh'));
             if (refresh > 0) {
                 this.interval = setInterval(() => this.loadData(), refresh);
@@ -312,7 +312,7 @@
         async loadData() {
             try {
                 this.classList.add('loading');
-                
+
                 const result = await api('data', {
                     action: 'list',
                     table: this.getAttribute('table'),
@@ -370,7 +370,7 @@
     // ==========================================================================
     // <intent-camera> - Podgląd kamery z AI
     // ==========================================================================
-    
+
     class IntentCamera extends HTMLElement {
         static get observedAttributes() {
             return ['source', 'refresh', 'detect', 'alert-email'];
@@ -398,14 +398,14 @@
 
         startStream() {
             const refresh = parseInt(this.getAttribute('refresh')) || 1000;
-            
+
             const update = async () => {
                 try {
                     const result = await api('camera', {
                         action: 'snapshot',
                         source: this.getAttribute('source')
                     });
-                    
+
                     if (result.image) {
                         this.img.src = `data:image/jpeg;base64,${result.image}`;
                     }
@@ -475,7 +475,7 @@
     // ==========================================================================
     // <intent-auth> - Logowanie/Rejestracja
     // ==========================================================================
-    
+
     class IntentAuth extends HTMLElement {
         static get observedAttributes() {
             return ['mode', 'redirect', 'providers'];
@@ -533,7 +533,7 @@
                 if (result.token) {
                     localStorage.setItem('auth_token', result.token);
                     status.textContent = '✅ Sukces!';
-                    
+
                     const redirect = this.getAttribute('redirect');
                     if (redirect) {
                         window.location.href = redirect;
@@ -561,7 +561,7 @@
     // ==========================================================================
     // <intent-chart> - Wykres z auto-odświeżaniem
     // ==========================================================================
-    
+
     class IntentChart extends HTMLElement {
         static get observedAttributes() {
             return ['type', 'data-source', 'refresh', 'labels', 'datasets'];
@@ -600,7 +600,7 @@
 
         async loadData() {
             const dataSource = this.getAttribute('data-source');
-            
+
             let data;
             if (dataSource) {
                 const result = await api('data', {
@@ -639,7 +639,7 @@
     // ==========================================================================
     // Register Components
     // ==========================================================================
-    
+
     customElements.define('intent-form', IntentForm);
     customElements.define('intent-pay', IntentPay);
     customElements.define('intent-image', IntentImage);
@@ -651,53 +651,53 @@
     // ==========================================================================
     // Default Styles
     // ==========================================================================
-    
+
     const styles = document.createElement('style');
     styles.textContent = `
         intent-form, intent-data, intent-camera, intent-auth {
             display: block;
         }
-        
+
         intent-form.loading button[type="submit"] {
             opacity: 0.6;
             cursor: wait;
         }
-        
+
         .intent-status {
             padding: 10px;
             margin-top: 10px;
             border-radius: 4px;
         }
-        
+
         .intent-status-success {
             background: #d4edda;
             color: #155724;
         }
-        
+
         .intent-status-error {
             background: #f8d7da;
             color: #721c24;
         }
-        
+
         .intent-table {
             width: 100%;
             border-collapse: collapse;
         }
-        
+
         .intent-table th, .intent-table td {
             padding: 8px;
             border: 1px solid #ddd;
             text-align: left;
         }
-        
+
         .intent-table th {
             background: #f5f5f5;
         }
-        
+
         .intent-camera-container {
             position: relative;
         }
-        
+
         .intent-camera-overlay {
             position: absolute;
             top: 0;
@@ -706,7 +706,7 @@
             bottom: 0;
             pointer-events: none;
         }
-        
+
         .detection-label {
             position: absolute;
             top: -20px;
@@ -716,25 +716,25 @@
             padding: 2px 6px;
             font-size: 11px;
         }
-        
+
         .intent-auth-form {
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
-        
+
         .intent-auth-form input {
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
-        
+
         .intent-auth-divider {
             text-align: center;
             margin: 15px 0;
             color: #999;
         }
-        
+
         .intent-auth-social {
             display: flex;
             flex-direction: column;

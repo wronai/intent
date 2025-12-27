@@ -1,7 +1,7 @@
 # IntentForge - NLP-driven Code Generation Framework
 # Production-ready Makefile with full lifecycle management
 
-.PHONY: all install dev test lint format security validate docs build publish clean docker help
+.PHONY: all install dev test lint format security validate docs build publish clean docker help run e2e e2e-config e2e-services e2e-frontend
 
 # Configuration
 PYTHON := python3
@@ -9,6 +9,11 @@ PIP := pip3
 PROJECT := intentforge
 VERSION := $(shell cat VERSION 2>/dev/null || echo "0.1.0")
 DOCKER_IMAGE := $(PROJECT):$(VERSION)
+
+# Ports (read from .env when possible)
+APP_PORT := $(shell $(PYTHON) -c "from dotenv import dotenv_values; print(dotenv_values('.env').get('APP_PORT','8000'))" 2>/dev/null || echo 8000)
+APP_PORT_EXTERNAL := $(shell $(PYTHON) -c "from dotenv import dotenv_values; v=dotenv_values('.env'); print(v.get('APP_PORT_EXTERNAL', v.get('APP_PORT','8000')))" 2>/dev/null || echo 8000)
+MQTT_PORT := $(shell $(PYTHON) -c "from dotenv import dotenv_values; print(dotenv_values('.env').get('MQTT_PORT','1883'))" 2>/dev/null || echo 1883)
 
 # Colors
 GREEN := \033[0;32m
@@ -64,13 +69,25 @@ security: ## Run security checks
 
 test: ## Run tests with coverage
 	@echo "$(GREEN)Running tests...$(NC)"
-	pytest tests/ -v --cov=$(PROJECT) --cov-report=html --cov-report=term-missing
+	$(PYTHON) -m pytest tests/ -v --cov=$(PROJECT) --cov-report=html --cov-report=term-missing
 
 test-fast: ## Run tests without coverage
-	pytest tests/ -v -x --tb=short
+	$(PYTHON) -m pytest tests/ -v -x --tb=short
 
 test-integration: ## Run integration tests
-	pytest tests/integration/ -v --timeout=60
+	$(PYTHON) -m pytest tests/integration/ -v --timeout=60
+
+e2e: ## Run all E2E tests
+	$(PYTHON) -m pytest tests/e2e/ -v
+
+e2e-config: ## Run configuration E2E tests
+	$(PYTHON) -m pytest tests/e2e/test_config.py -v
+
+e2e-services: ## Run service health E2E tests
+	$(PYTHON) -m pytest tests/e2e/test_services.py -v
+
+e2e-frontend: ## Run frontend Playwright E2E tests
+	$(PYTHON) -m pytest tests/e2e/test_frontend.py -v
 
 validate: ## Validate generated code samples
 	@echo "$(GREEN)Validating code generation...$(NC)"
@@ -79,7 +96,7 @@ validate: ## Validate generated code samples
 
 benchmark: ## Run performance benchmarks
 	@echo "$(GREEN)Running benchmarks...$(NC)"
-	pytest tests/benchmarks/ -v --benchmark-only --benchmark-json=benchmark.json
+	$(PYTHON) -m pytest tests/benchmarks/ -v --benchmark-only --benchmark-json=benchmark.json
 
 #━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # BUILD & PACKAGE
@@ -106,8 +123,8 @@ docker-build: ## Build Docker image
 
 docker-run: ## Run Docker container
 	docker run -it --rm \
-		-p 8000:8000 \
-		-p 1883:1883 \
+		-p $(APP_PORT_EXTERNAL):$(APP_PORT) \
+		-p $(MQTT_PORT):$(MQTT_PORT) \
 		-v $(PWD)/.env:/app/.env:ro \
 		$(DOCKER_IMAGE)
 
@@ -202,7 +219,9 @@ db-reset: ## Reset database (DANGER!)
 #━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 run-server: ## Run development server
-	$(PYTHON) -m $(PROJECT).server --reload --host 0.0.0.0 --port 8000
+	$(PYTHON) -m uvicorn $(PROJECT).server:app --reload --host 0.0.0.0 --port $(APP_PORT)
+
+run: run-server ## Alias for run-server
 
 run-broker: ## Run MQTT broker
 	mosquitto -c mosquitto.conf
@@ -227,7 +246,7 @@ repl: ## Open Python REPL with project loaded
 
 docs: ## Generate documentation
 	mkdocs build
-	
+
 docs-serve: ## Serve documentation locally
 	mkdocs serve
 

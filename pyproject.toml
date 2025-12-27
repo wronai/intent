@@ -43,6 +43,7 @@ dependencies = [
     "python-dotenv>=1.0",
     "anthropic>=0.30.0",
     "paho-mqtt>=2.0",
+    "jsonschema>=4.0",
 ]
 
 [project.optional-dependencies]
@@ -83,10 +84,10 @@ intentforge = "intentforge.cli:main"
 intentforge-server = "intentforge.server:run"
 
 [project.urls]
-Homepage = "https://github.com/softreck/intentforge"
+Homepage = "https://github.com/wronai/intent"
 Documentation = "https://intentforge.readthedocs.io"
-Repository = "https://github.com/softreck/intentforge.git"
-Changelog = "https://github.com/softreck/intentforge/blob/main/CHANGELOG.md"
+Repository = "https://github.com/wronai/intent.git"
+Changelog = "https://github.com/wronai/intent/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -99,28 +100,24 @@ intentforge = ["py.typed", "templates/*"]
 [tool.ruff]
 target-version = "py310"
 line-length = 100
+
+[tool.ruff.lint]
 select = [
     "E",    # pycodestyle errors
     "W",    # pycodestyle warnings
     "F",    # Pyflakes
     "I",    # isort
-    "B",    # flake8-bugbear
-    "C4",   # flake8-comprehensions
     "UP",   # pyupgrade
-    "ARG",  # flake8-unused-arguments
-    "SIM",  # flake8-simplify
 ]
 ignore = [
+    "E402",   # module level import not at top of file
     "E501",   # line too long (handled by formatter)
-    "B008",   # do not perform function calls in argument defaults
-    "B905",   # zip without strict
-    "C901",   # too complex
 ]
 
-[tool.ruff.per-file-ignores]
-"tests/*" = ["ARG", "S101"]
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "F841"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["intentforge"]
 
 # MyPy configuration
