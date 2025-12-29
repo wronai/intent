@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntentForge AutoDev</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1e1e; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
+
+        .chat-bubble { max-width: 85%; }
+        .typing-indicator span {
+            display: inline-block; width: 6px; height: 6px; background: #666; border-radius: 50%;
+            animation: typing 1s infinite; margin: 0 2px;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+        .log-entry { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .log-timestamp { color: #666; margin-right: 8px; font-size: 0.8em; }
+        .log-info { color: #aaa; }
+        .log-error { color: #f87171; }
+        .log-success { color: #4ade80; }
+        .log-warning { color: #facc15; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="h-14 bg-gray-950 border-b border-gray-800 flex items-center justify-between px-4 z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <i data-lucide="zap" class="text-white w-5 h-5"></i>
+            </div>
+            <h1 class="font-bold text-lg text-white">IntentForge <span class="text-blue-500 font-normal">AutoDev</span></h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 text-sm text-gray-400 bg-gray-900 px-3 py-1 rounded-full border border-gray-800">
+                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                <span id="model-name">qwen2.5-coder:7b</span>
+            </div>
+            <button class="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden">
+
+        <!-- Left: Chat Panel -->
+        <div class="w-1/2 flex flex-col border-r border-gray-800 bg-gray-900/50">
+            <!-- Messages Area -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-6">
+                <!-- Welcome Message -->
+                <div class="flex gap-4">
+                    <div class="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center flex-shrink-0 mt-1">
+                        <i data-lucide="bot" class="w-5 h-5 text-blue-500"></i>
+                    </div>
+                    <div class="chat-bubble bg-gray-800/50 rounded-2xl rounded-tl-none p-4 border border-gray-700/50">
+                        <p>Hi! I'm your AI developer assistant. I can write code, run it in a sandbox, and fix bugs automatically.</p>
+                        <div class="mt-4 flex gap-2 flex-wrap">
+                            <button onclick="setInput('Create a Flask API for user management')" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg transition-colors border border-gray-600">Create Flask API</button>
+                            <button onclick="setInput('Write a script to analyze CSV data')" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg transition-colors border border-gray-600">Analyze CSV</button>
+                            <button onclick="setInput('Build a FastAPI service with Redis')" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg transition-colors border border-gray-600">FastAPI + Redis</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="p-4 bg-gray-900 border-t border-gray-800">
+                <div class="relative">
+                    <textarea id="chat-input" rows="1" class="w-full bg-gray-800 text-white rounded-xl pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-700 resize-none overflow-hidden" placeholder="Describe your task..."></textarea>
+                    <button id="send-btn" class="absolute right-2 bottom-2 p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
+                        <i data-lucide="arrow-up" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="flex justify-between items-center mt-2 px-1">
+                    <div class="flex gap-4 text-xs text-gray-500">
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-gray-300">
+                            <input type="checkbox" id="auto-run-check" checked class="rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-0">
+                            <span>Auto-Run</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-gray-300">
+                            <input type="checkbox" id="auto-fix-check" checked class="rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-0">
+                            <span>Auto-Fix</span>
+                        </label>
+                    </div>
+                    <span class="text-xs text-gray-600">Enter to send, Shift+Enter for newline</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Sandbox Panel -->
+        <div class="w-1/2 flex flex-col bg-[#1e1e1e]">
+            <!-- Tabs -->
+            <div class="flex items-center border-b border-gray-800 bg-gray-950">
+                <button class="px-4 py-3 text-sm font-medium text-blue-400 border-b-2 border-blue-500 bg-gray-900 flex items-center gap-2">
+                    <i data-lucide="terminal" class="w-4 h-4"></i> Live Logs
+                </button>
+                <button class="px-4 py-3 text-sm font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-900 transition-colors flex items-center gap-2">
+                    <i data-lucide="code" class="w-4 h-4"></i> Code
+                </button>
+                <button class="px-4 py-3 text-sm font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-900 transition-colors flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4"></i> Results
+                </button>
+                <div class="flex-1"></div>
+                <div class="px-4 flex items-center gap-2">
+                    <span id="status-badge" class="px-2 py-0.5 rounded text-xs font-medium bg-gray-800 text-gray-400">IDLE</span>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 relative font-mono text-sm overflow-hidden">
+                <!-- Logs View -->
+                <div id="logs-view" class="absolute inset-0 p-4 overflow-y-auto space-y-1">
+                    <div class="text-gray-500 italic">Waiting for execution...</div>
+                </div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="h-12 bg-gray-900 border-t border-gray-800 flex items-center px-4 justify-between">
+                <div class="flex items-center gap-2">
+                    <button id="clear-logs-btn" class="p-1.5 hover:bg-gray-800 rounded text-gray-400" title="Clear Logs">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                    <button id="stop-btn" class="p-1.5 hover:bg-red-900/30 text-red-400 rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled title="Stop Execution">
+                        <i data-lucide="square" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="flex items-center gap-4 text-xs text-gray-500">
+                    <span id="execution-timer">00:00</span>
+                    <span>Running in Sandbox</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // State
+        const state = {
+            isGenerating: false,
+            isRunning: false,
+            sessionId: null,
+            logs: [],
+            ws: null
+        };
+
+        // DOM Elements
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const logsView = document.getElementById('logs-view');
+        const statusBadge = document.getElementById('status-badge');
+        const autoRunCheck = document.getElementById('auto-run-check');
+        const autoFixCheck = document.getElementById('auto-fix-check');
+        const stopBtn = document.getElementById('stop-btn');
+        const clearLogsBtn = document.getElementById('clear-logs-btn');
+
+        // Utils
+        function setInput(text) {
+            chatInput.value = text;
+            chatInput.focus();
+            autoResize(chatInput);
+        }
+
+        function autoResize(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp * 1000);
+            return date.toTimeString().split(' ')[0];
+        }
+
+        function scrollToBottom(el) {
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function updateStatus(status) {
+            statusBadge.textContent = status.toUpperCase();
+
+            const classes = {
+                'IDLE': 'bg-gray-800 text-gray-400',
+                'RUNNING': 'bg-blue-900/50 text-blue-400 animate-pulse',
+                'SUCCESS': 'bg-green-900/30 text-green-400',
+                'ERROR': 'bg-red-900/30 text-red-400'
+            };
+
+            statusBadge.className = `px-2 py-0.5 rounded text-xs font-medium ${classes[status] || classes.IDLE}`;
+
+            if (status === 'RUNNING') {
+                stopBtn.disabled = false;
+            } else {
+                stopBtn.disabled = true;
+            }
+        }
+
+        // Chat Logic
+        async function appendMessage(role, content) {
+            const div = document.createElement('div');
+            div.className = 'flex gap-4 fade-in';
+
+            const isUser = role === 'user';
+
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-full ${isUser ? 'bg-purple-600' : 'bg-blue-600/20'} flex items-center justify-center flex-shrink-0 mt-1">
+                    <i data-lucide="${isUser ? 'user' : 'bot'}" class="w-5 h-5 ${isUser ? 'text-white' : 'text-blue-500'}"></i>
+                </div>
+                <div class="chat-bubble ${isUser ? 'bg-purple-600/10 border border-purple-500/20' : 'bg-gray-800/50 border border-gray-700/50'} rounded-2xl ${isUser ? 'rounded-tr-none' : 'rounded-tl-none'} p-4">
+                    <div class="prose prose-invert prose-sm max-w-none">
+                        ${marked.parse(content)}
+                    </div>
+                </div>
+            `;
+
+            chatMessages.appendChild(div);
+            lucide.createIcons();
+            scrollToBottom(chatMessages);
+
+            // Extract code blocks for execution if bot
+            if (!isUser && autoRunCheck.checked) {
+                const codeBlock = content.match(/```(?:python)?\n([\s\S]*?)```/);
+                if (codeBlock) {
+                    const code = codeBlock[1];
+                    addRunButton(div.querySelector('.chat-bubble'), code);
+                    await runSandbox(code);
+                }
+            }
+        }
+
+        function addRunButton(container, code) {
+            const btn = document.createElement('button');
+            btn.className = 'mt-3 flex items-center gap-2 text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors';
+            btn.innerHTML = '<i data-lucide="play" class="w-3 h-3"></i> Run in Sandbox';
+            btn.onclick = () => runSandbox(code);
+            container.appendChild(btn);
+            lucide.createIcons();
+        }
+
+        async function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text || state.isGenerating) return;
+
+            // UI Updates
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            appendMessage('user', text);
+            state.isGenerating = true;
+
+            // Loading indicator
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'flex gap-4';
+            loadingDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center flex-shrink-0 mt-1">
+                    <i data-lucide="bot" class="w-5 h-5 text-blue-500"></i>
+                </div>
+                <div class="bg-gray-800/50 rounded-2xl rounded-tl-none p-4 border border-gray-700/50">
+                    <div class="typing-indicator"><span></span><span></span><span></span></div>
+                </div>
+            `;
+            chatMessages.appendChild(loadingDiv);
+            scrollToBottom(chatMessages);
+            lucide.createIcons();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: text,
+                        system: "You are an expert Python developer. Provide complete, runnable code examples. Wrap code in ```python blocks."
+                    })
+                });
+
+                const data = await response.json();
+
+                // Remove loading
+                loadingDiv.remove();
+
+                if (data.success) {
+                    appendMessage('assistant', data.response);
+                } else {
+                    appendMessage('assistant', `Error: ${data.error}`);
+                }
+            } catch (err) {
+                loadingDiv.remove();
+                appendMessage('assistant', `Connection Error: ${err.message}`);
+            } finally {
+                state.isGenerating = false;
+            }
+        }
+
+        // Sandbox Logic
+        function addLog(type, message) {
+            const div = document.createElement('div');
+            div.className = 'log-entry font-mono text-xs flex';
+
+            const timestamp = formatTime(Date.now() / 1000);
+
+            let colorClass = 'text-gray-300';
+            if (type === 'error' || message.includes('Error') || message.includes('❌')) colorClass = 'log-error';
+            else if (type === 'success' || message.includes('✅')) colorClass = 'log-success';
+            else if (message.includes('warn') || message.includes('⚠️')) colorClass = 'log-warning';
+            else if (message.includes('Running') || message.includes('Starting')) colorClass = 'text-blue-400';
+
+            div.innerHTML = `
+                <span class="log-timestamp select-none">${timestamp}</span>
+                <span class="${colorClass}">${message}</span>
+            `;
+
+            logsView.appendChild(div);
+            scrollToBottom(logsView);
+        }
+
+        async function runSandbox(code) {
+            if (state.isRunning) return;
+
+            logsView.innerHTML = '';
+            addLog('info', '🚀 Initializing Sandbox environment...');
+            state.isRunning = true;
+            updateStatus('RUNNING');
+
+            try {
+                const response = await fetch('/api/sandbox/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code: code,
+                        auto_fix: autoFixCheck.checked
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    state.sessionId = data.session_id;
+                    connectWebSocket(data.session_id);
+                } else {
+                    addLog('error', `Failed to start sandbox: ${data.error}`);
+                    state.isRunning = false;
+                    updateStatus('ERROR');
+                }
+            } catch (err) {
+                addLog('error', `Connection error: ${err.message}`);
+                state.isRunning = false;
+                updateStatus('ERROR');
+            }
+        }
+
+        function connectWebSocket(sessionId) {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/sandbox/${sessionId}`;
+
+            if (state.ws) state.ws.close();
+
+            state.ws = new WebSocket(wsUrl);
+
+            state.ws.onopen = () => {
+                addLog('info', '📡 Connected to live stream');
+            };
+
+            state.ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+
+                if (msg.type === 'result') {
+                    const result = msg.data;
+                    if (result.success) {
+                        addLog('success', '\n✨ Execution completed successfully!');
+                        updateStatus('SUCCESS');
+                    } else {
+                        addLog('error', `\n💀 Execution failed: ${result.error || 'Unknown error'}`);
+                        updateStatus('ERROR');
+                    }
+                    state.isRunning = false;
+                    state.ws.close();
+                } else if (msg.type === 'error') {
+                    addLog('error', msg.data);
+                } else {
+                    addLog(msg.type, msg.data);
+                }
+            };
+
+            state.ws.onerror = (err) => {
+                addLog('error', 'WebSocket connection error');
+                state.isRunning = false;
+                updateStatus('ERROR');
+            };
+
+            state.ws.onclose = () => {
+                if (state.isRunning) {
+                    addLog('info', 'Connection closed');
+                    state.isRunning = false;
+                    updateStatus('IDLE');
+                }
+            };
+        }
+
+        async function stopExecution() {
+            if (!state.sessionId || !state.isRunning) return;
+
+            try {
+                await fetch(`/api/sandbox/stop/${state.sessionId}`, { method: 'POST' });
+                addLog('warning', '🛑 Execution stopped by user');
+                state.isRunning = false;
+                updateStatus('IDLE');
+                if (state.ws) state.ws.close();
+            } catch (err) {
+                addLog('error', `Failed to stop: ${err.message}`);
+            }
+        }
+
+        // Event Listeners
+        chatInput.addEventListener('input', () => autoResize(chatInput));
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
+        stopBtn.addEventListener('click', stopExecution);
+        clearLogsBtn.addEventListener('click', () => logsView.innerHTML = '<div class="text-gray-500 italic">Logs cleared</div>');
+
+        // Markdown library import hack for demo
+        const script = document.createElement('script');
+        script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
+        document.head.appendChild(script);
+
+    </script>
+</body>
+</html>

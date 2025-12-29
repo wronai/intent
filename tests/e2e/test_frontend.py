@@ -22,6 +22,7 @@ Run:
 """
 
 import asyncio
+import json
 import os
 import re
 import sys
@@ -629,6 +630,143 @@ class TestPerformance:
         critical_errors = [e for e in errors if "favicon" not in e.lower()]
 
         assert len(critical_errors) == 0, f"Console errors: {critical_errors}"
+
+
+@pytest.mark.e2e
+class TestAutoDevUI:
+    @pytest.mark.asyncio
+    async def test_autodev_chat_and_sandbox_happy_path(self, page: Page):
+        await page.add_init_script(
+            """
+            window.lucide = { createIcons: () => {} };
+            window.marked = { parse: (s) => s };
+            class MockWebSocket {
+                constructor(url) {
+                    this.url = url;
+                    this.readyState = 1;
+                    setTimeout(() => { if (this.onopen) this.onopen(); }, 10);
+                    setTimeout(() => {
+                        if (this.onmessage) {
+                            this.onmessage({
+                                data: JSON.stringify({ type: 'result', data: { success: true } })
+                            });
+                        }
+                    }, 80);
+                }
+                send() {}
+                close() {
+                    this.readyState = 3;
+                    if (this.onclose) this.onclose();
+                }
+            }
+            window.WebSocket = MockWebSocket;
+            """
+        )
+
+        async def chat_route(route, request):
+            body = {
+                "success": True,
+                "response": "```python\nprint('hello from autodev')\n```",
+                "model": "mock",
+                "provider": "mock",
+            }
+            await route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(body),
+            )
+
+        async def sandbox_route(route, request):
+            body = {"success": True, "session_id": "t1", "websocket_url": "/ws/sandbox/t1"}
+            await route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(body),
+            )
+
+        await page.route("**/api/chat", chat_route)
+        await page.route("**/api/sandbox/run", sandbox_route)
+
+        await page.goto(f"{BASE_URL}/examples/usecases/autodev_chat.html")
+        await expect(page.locator("#chat-input")).to_be_visible()
+
+        await page.fill("#chat-input", "write some code")
+        await page.click("#send-btn")
+
+        await expect(page.locator("#chat-messages")).to_contain_text("hello from autodev")
+        await expect(page.locator("#status-badge")).to_contain_text("SUCCESS")
+        await expect(page.locator("#logs-view")).to_contain_text("Execution completed")
+
+    @pytest.mark.asyncio
+    async def test_autodev_stop_button_calls_api_and_resets_status(self, page: Page):
+        await page.add_init_script(
+            """
+            window.lucide = { createIcons: () => {} };
+            window.marked = { parse: (s) => s };
+            class MockWebSocket {
+                constructor(url) {
+                    this.url = url;
+                    this.readyState = 1;
+                    setTimeout(() => { if (this.onopen) this.onopen(); }, 10);
+                }
+                send() {}
+                close() {
+                    this.readyState = 3;
+                    if (this.onclose) this.onclose();
+                }
+            }
+            window.WebSocket = MockWebSocket;
+            """
+        )
+
+        stop_calls: list[str] = []
+
+        async def chat_route(route, request):
+            body = {
+                "success": True,
+                "response": "```python\nprint('hello from autodev')\n```",
+                "model": "mock",
+                "provider": "mock",
+            }
+            await route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(body),
+            )
+
+        async def sandbox_route(route, request):
+            body = {"success": True, "session_id": "t1", "websocket_url": "/ws/sandbox/t1"}
+            await route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(body),
+            )
+
+        async def stop_route(route, request):
+            stop_calls.append(request.url)
+            await route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({"success": True}),
+            )
+
+        await page.route("**/api/chat", chat_route)
+        await page.route("**/api/sandbox/run", sandbox_route)
+        await page.route("**/api/sandbox/stop/t1", stop_route)
+
+        await page.goto(f"{BASE_URL}/examples/usecases/autodev_chat.html")
+
+        await page.fill("#chat-input", "write some code")
+        await page.click("#send-btn")
+
+        await expect(page.locator("#status-badge")).to_contain_text("RUNNING")
+        await expect(page.locator("#stop-btn")).to_be_enabled()
+
+        await page.click("#stop-btn")
+
+        await expect(page.locator("#status-badge")).to_contain_text("IDLE")
+        await expect(page.locator("#logs-view")).to_contain_text("Execution stopped")
+        assert any(url.endswith("/api/sandbox/stop/t1") for url in stop_calls)
 
 
 # =============================================================================

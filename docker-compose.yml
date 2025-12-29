@@ -11,7 +11,7 @@ services:
     container_name: intentforge-server
     restart: unless-stopped
     ports:
-      - "${APP_PORT_EXTERNAL}:${APP_PORT}"
+      - "${APP_PORT_EXTERNAL:-8000}:${APP_PORT:-8000}"
     environment:
       - ENVIRONMENT=${ENVIRONMENT}
       - HOST=${APP_HOST}
@@ -28,12 +28,21 @@ services:
       - LLM_PROVIDER=${LLM_PROVIDER}
       - LLM_MODEL=${LLM_MODEL}
       - OLLAMA_HOST=${OLLAMA_HOST}
-      - OLLAMA_PORT=${OLLAMA_PORT}
-      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS}
-      - LLM_TEMPERATURE=${LLM_TEMPERATURE}
-      - LLM_REQUESTS_PER_MINUTE=${LLM_REQUESTS_PER_MINUTE}
-      - LLM_TOKENS_PER_MINUTE=${LLM_TOKENS_PER_MINUTE}
-      - LLM_MAX_RETRIES=${LLM_MAX_RETRIES}
+
+  # ==========================================================================
+  # Tests
+  # ==========================================================================
+  tests:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: tester
+    container_name: intentforge-tests
+    volumes:
+      - ./tests:/build/tests
+      - ./intentforge:/build/intentforge
+    command: pytest --timeout=300 --ignore=tests/e2e -m "not e2e" tests/
     env_file:
       - .env
     depends_on:
@@ -43,15 +52,35 @@ services:
         condition: service_healthy
       mosquitto:
         condition: service_started
-    volumes:
-      - ./logs:/app/logs
     networks:
       - intentforge-network
-    healthcheck:
-      test: ["CMD", "python", "-c", "import os,urllib.request; urllib.request.urlopen('http://localhost:%s/health' % os.getenv('PORT','8000')).read()"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+
+  e2e:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: e2e
+    container_name: intentforge-e2e
+    env_file:
+      - .env
+    environment:
+      - TEST_BASE_URL=http://web
+      - TEST_API_URL=http://web/api
+    command: pytest --timeout=300 -m e2e tests/e2e/
+    depends_on:
+      intentforge:
+        condition: service_started
+      web:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    networks:
+      - intentforge-network
 
   # ==========================================================================
   # Worker (Background processing)
@@ -93,8 +122,8 @@ services:
     container_name: intentforge-mqtt
     restart: unless-stopped
     ports:
-      - "${MQTT_PORT_EXTERNAL}:${MQTT_PORT}"      # MQTT
-      - "${MQTT_WEBSOCKET_PORT_EXTERNAL}:9001"      # WebSocket
+      - "${MQTT_PORT_EXTERNAL:-1883}:${MQTT_PORT:-1883}"      # MQTT
+      - "${MQTT_WEBSOCKET_PORT_EXTERNAL:-9001}:9001"      # WebSocket
     command: mosquitto -c /mosquitto-no-auth.conf
     volumes:
       - mosquitto-data:/mosquitto/data
@@ -110,7 +139,7 @@ services:
     container_name: intentforge-db
     restart: unless-stopped
     ports:
-      - "${DB_PORT_EXTERNAL}:${DB_PORT}"
+      - "${DB_PORT_EXTERNAL:-5432}:${DB_PORT:-5432}"
     environment:
       - POSTGRES_USER=${DB_USER:-postgres}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-intentforge}
@@ -134,7 +163,7 @@ services:
     container_name: intentforge-cache
     restart: unless-stopped
     ports:
-      - "${REDIS_PORT_EXTERNAL}:${REDIS_PORT}"
+      - "${REDIS_PORT_EXTERNAL:-6379}:${REDIS_PORT:-6379}"
     command: redis-server --appendonly yes
     volumes:
       - redis-data:/data
@@ -154,7 +183,7 @@ services:
     container_name: intentforge-web
     restart: unless-stopped
     ports:
-      - "${WEB_PORT}:80"
+      - "${WEB_PORT:-80}:80"
     volumes:
       - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./frontend:/usr/share/nginx/html/frontend:ro

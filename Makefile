@@ -129,7 +129,7 @@ docker-run: ## Run Docker container
 		$(DOCKER_IMAGE)
 
 start: ## Start all services
-	docker-compose up --build
+	docker-compose up --build intentforge worker mosquitto postgres redis web
 
 stop: ## Stop all services
 	docker-compose down -v

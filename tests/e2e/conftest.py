@@ -27,6 +27,11 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow running")
 
 
+def pytest_collection_modifyitems(config, items):
+    for item in items:
+        item.add_marker(pytest.mark.e2e)
+
+
 @pytest.fixture(scope="session")
 def env_config():
     """Provide environment configuration for tests"""

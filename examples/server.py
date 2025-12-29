@@ -260,6 +260,33 @@ async def health():
 # =============================================================================
 
 
+class ChatRequest(BaseModel):
+    message: str
+    model: str | None = None
+    system: str | None = None
+    history: list[dict[str, Any]] | None = None
+
+
+@app.post("/api/chat")
+async def chat(request: ChatRequest) -> JSONResponse:
+    from intentforge.services import ChatService
+
+    if not request.message:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "error": "Missing 'message' parameter"},
+        )
+
+    chat_service = ChatService()
+    result = await chat_service.send(
+        message=request.message,
+        model=request.model,
+        system=request.system,
+        history=request.history,
+    )
+    return JSONResponse(content=result)
+
+
 @app.post("/api/chat/stream")
 async def chat_stream(request: Request):
     """
@@ -361,6 +388,7 @@ async def websocket_chat(websocket: WebSocket):
 
 # Active sandbox sessions for streaming
 sandbox_sessions: dict[str, list[WebSocket]] = {}
+sandbox_tasks: dict[str, asyncio.Task] = {}
 
 
 @app.websocket("/ws/sandbox/{session_id}")
@@ -567,8 +595,30 @@ async def sandbox_run_streaming(request: Request):
                 "result",
             )
 
+    async def run_sandbox_wrapped():
+        try:
+            await run_sandbox()
+        except asyncio.CancelledError:
+            await broadcast_sandbox_log(session_id, "🛑 Execution cancelled", "status")
+            await broadcast_sandbox_log(
+                session_id,
+                {"success": False, "error": "cancelled"},
+                "result",
+            )
+            raise
+        except Exception as e:
+            await broadcast_sandbox_log(session_id, f"❌ Sandbox error: {e}", "error")
+            await broadcast_sandbox_log(
+                session_id,
+                {"success": False, "error": str(e)},
+                "result",
+            )
+        finally:
+            sandbox_tasks.pop(session_id, None)
+
     # Run in background
-    _task = asyncio.create_task(run_sandbox())  # noqa: RUF006
+    task = asyncio.create_task(run_sandbox_wrapped())  # noqa: RUF006
+    sandbox_tasks[session_id] = task
 
     return JSONResponse(
         content={
@@ -578,6 +628,20 @@ async def sandbox_run_streaming(request: Request):
             "websocket_url": f"/ws/sandbox/{session_id}",
         }
     )
+
+
+@app.post("/api/sandbox/stop/{session_id}")
+async def sandbox_stop(session_id: str) -> JSONResponse:
+    task = sandbox_tasks.get(session_id)
+    if task is None:
+        return JSONResponse(status_code=404, content={"success": False, "error": "Session not found"})
+
+    if task.done():
+        sandbox_tasks.pop(session_id, None)
+        return JSONResponse(status_code=400, content={"success": False, "error": "Session already finished"})
+
+    task.cancel()
+    return JSONResponse(content={"success": True})
 
 
 # =============================================================================

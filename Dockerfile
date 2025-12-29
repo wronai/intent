@@ -17,13 +17,62 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install Python dependencies
+# Copy project files
 COPY pyproject.toml .
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir ".[server]"
+
+# Install Python dependencies with cache mount
+# We install all dependencies here including those previously in runtime
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip setuptools wheel && \
+    pip install ".[server]" && \
+    pip install \
+    pytesseract pillow \
+    requests httpx aiohttp \
+    numpy pandas \
+    beautifulsoup4 lxml \
+    pyyaml toml \
+    pdf2image
 
 # =============================================================================
-# Stage 2: Runtime
+# Stage 2: Tester
+# =============================================================================
+FROM builder AS tester
+
+# Install unit/integration test dependencies (no Playwright)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install ".[test]"
+
+# Copy source code for testing
+COPY intentforge/ ./intentforge/
+COPY examples/ ./examples/
+COPY tests/ ./tests/
+COPY pytest.ini .
+
+# Run tests with timeout
+# Fails build if tests fail
+RUN pytest --timeout=300 --ignore=tests/e2e -m "not e2e" tests/
+
+# =============================================================================
+# Stage 3: E2E (Playwright)
+# =============================================================================
+FROM builder AS e2e
+
+# Install Playwright (and only e2e extras) + browser binaries
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install ".[test,e2e]" && \
+    playwright install --with-deps chromium
+
+# Copy source code for testing
+COPY intentforge/ ./intentforge/
+COPY examples/ ./examples/
+COPY tests/ ./tests/
+COPY pytest.ini .
+
+# Run only e2e tests
+RUN pytest --timeout=300 -m e2e tests/e2e/
+
+# =============================================================================
+# Stage 4: Runtime
 # =============================================================================
 FROM python:3.12-slim AS runtime
 
@@ -32,7 +81,8 @@ LABEL maintainer="Softreck <info@softreck.dev>"
 LABEL version="0.1.0"
 LABEL description="IntentForge - NLP-driven Code Generation Framework"
 
-# Install Tesseract OCR and language packs
+# Install Tesseract OCR and language packs (System dependencies)
+# Combine apt-get calls to reduce layers
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-pol \
@@ -49,16 +99,7 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install pytesseract (OCR Python wrapper) and common packages for code execution
-RUN pip install --no-cache-dir \
-    pytesseract pillow \
-    requests httpx aiohttp \
-    numpy pandas \
-    beautifulsoup4 lxml \
-    pyyaml toml \
-    pdf2image
-
-# Make venv writable for runtime package installation
+# Make venv writable (optional, usually not needed in immutable containers but kept for flexibility)
 RUN chmod -R a+w /opt/venv
 
 # Copy application code
