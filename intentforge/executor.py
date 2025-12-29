@@ -234,7 +234,7 @@ class DynamicExecutor:
         except Exception as e:
             return ExecutionResult(
                 success=False,
-                error=f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}",
+                error=f"{type(e).__name__}: {e!s}\n{traceback.format_exc()}",
                 execution_time_ms=(time.time() - start_time) * 1000,
             )
 
@@ -260,7 +260,7 @@ const testData = {json.dumps(test_data or {})};
 
         try:
             result = subprocess.run(
-                ["node", str(temp_file)], capture_output=True, text=True, timeout=30
+                ["node", str(temp_file)], check=False, capture_output=True, text=True, timeout=30
             )
 
             return ExecutionResult(
@@ -319,6 +319,7 @@ const testData = {json.dumps(test_data or {})};
                 # Try to compile with g++ just for syntax check
                 result = subprocess.run(
                     ["g++", "-fsyntax-only", str(temp_file)],
+                    check=False,
                     capture_output=True,
                     text=True,
                     timeout=30,

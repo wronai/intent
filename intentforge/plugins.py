@@ -283,7 +283,10 @@ class HookRegistry:
             self._handlers[event].remove(handler)
 
     async def emit(
-        self, event: HookEvent, data: dict[str, Any] = None, metadata: dict[str, Any] = None
+        self,
+        event: HookEvent,
+        data: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> list[Any]:
         """Emit event to all registered handlers"""
         ctx = HookContext(event=event, data=data or {}, metadata=metadata or {})
@@ -416,7 +419,7 @@ class PluginManager:
             plugin_config = config.get(name, {})
             plugin.setup(plugin_config)
 
-    async def emit(self, event: HookEvent, data: dict[str, Any] = None) -> list[Any]:
+    async def emit(self, event: HookEvent, data: dict[str, Any] | None = None) -> list[Any]:
         """Emit event to all plugin hooks"""
         return await self._hooks.emit(event, data)
 
@@ -434,7 +437,7 @@ plugins = PluginManager()
 # =============================================================================
 
 
-def cached(ttl: int = 3600, key_func: Callable = None):
+def cached(ttl: int = 3600, key_func: Callable | None = None):
     """
     Caching decorator for service methods.
 
@@ -689,30 +692,30 @@ class NotificationPlugin(BasePlugin):
 # =============================================================================
 
 __all__ = [
-    # Types
-    "MiddlewarePhase",
-    "HookEvent",
-    "MiddlewareResult",
-    "HookContext",
-    # Core
-    "MiddlewareChain",
-    "HookRegistry",
     "BasePlugin",
-    "PluginManager",
-    # Global instances
-    "hooks",
-    "plugins",
-    # Decorators
-    "middleware",
-    "hook",
-    "use_middleware",
-    "cached",
-    "retry",
-    "rate_limit",
-    "validate_input",
-    "audit_log",
+    "HookContext",
+    "HookEvent",
+    "HookRegistry",
     # Built-in plugins
     "LoggingPlugin",
     "MetricsPlugin",
+    # Core
+    "MiddlewareChain",
+    # Types
+    "MiddlewarePhase",
+    "MiddlewareResult",
     "NotificationPlugin",
+    "PluginManager",
+    "audit_log",
+    "cached",
+    "hook",
+    # Global instances
+    "hooks",
+    # Decorators
+    "middleware",
+    "plugins",
+    "rate_limit",
+    "retry",
+    "use_middleware",
+    "validate_input",
 ]

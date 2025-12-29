@@ -1,0 +1,1 @@
+"""AutoWorker unit tests package"""

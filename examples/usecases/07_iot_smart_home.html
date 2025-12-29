@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Home IoT - IntentForge Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #1a1a2e; color: #eee; min-height: 100vh; }
+        .room-card {
+            background: linear-gradient(145deg, #2d2d44, #252538);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .device-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .device-card:hover { background: rgba(255,255,255,0.1); }
+        .device-card.active {
+            background: linear-gradient(145deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+            border: 1px solid #667eea;
+        }
+        .device-icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .device-status { font-size: 0.8rem; color: #888; }
+        .device-value { font-size: 1.5rem; font-weight: bold; }
+        .slider-container { padding: 10px 0; }
+        .form-range::-webkit-slider-thumb { background: #667eea; }
+        .scene-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .scene-btn:hover { background: rgba(102, 126, 234, 0.2); border-color: #667eea; }
+        .scene-btn.active { background: #667eea; border-color: #667eea; }
+        .sensor-value {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .energy-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .energy-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+            transition: width 0.5s;
+        }
+        .automation-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #444;
+            transition: .4s;
+            border-radius: 26px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider { background: #667eea; }
+        input:checked + .toggle-slider:before { transform: translateX(24px); }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2>🏠 Smart Home</h2>
+                        <small class="text-muted">Sterowanie IoT przez IntentForge + MQTT</small>
+                    </div>
+                    <div>
+                        <span id="mqtt-status" class="badge bg-secondary">Łączenie...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Scenes -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h5 class="mb-3">⚡ Szybkie sceny</h5>
+                <div class="row">
+                    <div class="col-md-3 col-6 mb-2">
+                        <div class="scene-btn" data-scene="morning">
+                            <div style="font-size: 2rem;">🌅</div>
+                            <div>Poranek</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-2">
+                        <div class="scene-btn" data-scene="work">
+                            <div style="font-size: 2rem;">💼</div>
+                            <div>Praca</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-2">
+                        <div class="scene-btn" data-scene="movie">
+                            <div style="font-size: 2rem;">🎬</div>
+                            <div>Film</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-2">
+                        <div class="scene-btn" data-scene="night">
+                            <div style="font-size: 2rem;">🌙</div>
+                            <div>Noc</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Rooms & Devices -->
+            <div class="col-lg-8">
+                <!-- Living Room -->
+                <div class="room-card">
+                    <h5 class="mb-3">🛋️ Salon</h5>
+                    <div class="row">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="device-card" data-device="living_light" data-type="light">
+                                <div class="device-icon">💡</div>
+                                <div class="device-name">Główne światło</div>
+                                <div class="device-status" id="living_light_status">Wyłączone</div>
+                                <div class="slider-container">
+                                    <input type="range" class="form-range brightness-slider"
+                                           data-device="living_light" min="0" max="100" value="0">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="device-card" data-device="living_lamp" data-type="light">
+                                <div class="device-icon">🪔</div>
+                                <div class="device-name">Lampa</div>
+                                <div class="device-status" id="living_lamp_status">Wyłączona</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="device-card" data-device="living_tv" data-type="tv">
+                                <div class="device-icon">📺</div>
+                                <div class="device-name">Telewizor</div>
+                                <div class="device-status" id="living_tv_status">Wyłączony</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="device-card" data-device="living_ac" data-type="thermostat">
+                                <div class="device-icon">❄️</div>
+                                <div class="device-name">Klimatyzacja</div>
+                                <div class="device-value" id="living_ac_temp">22°C</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bedroom -->
+                <div class="room-card">
+                    <h5 class="mb-3">🛏️ Sypialnia</h5>
+                    <div class="row">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="device-card" data-device="bed_light" data-type="light">
+                                <div class="device-icon">💡</div>
+                                <div class="device-name">Światło</div>
+                                <div class="device-status" id="bed_light_status">Wyłączone</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="device-card" data-device="bed_blinds" data-type="blinds">
+                                <div class="device-icon">🪟</div>
+                                <div class="device-name">Rolety</div>
+                                <div class="device-status" id="bed_blinds_status">Otwarte</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="device-card" data-device="bed_fan" data-type="fan">
+                                <div class="device-icon">🌀</div>
+                                <div class="device-name">Wentylator</div>
+                                <div class="device-status" id="bed_fan_status">Wyłączony</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="device-card" data-device="bed_speaker" data-type="speaker">
+                                <div class="device-icon">🔊</div>
+                                <div class="device-name">Głośnik</div>
+                                <div class="device-status" id="bed_speaker_status">Wyłączony</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kitchen -->
+                <div class="room-card">
+                    <h5 class="mb-3">🍳 Kuchnia</h5>
+                    <div class="row">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="device-card" data-device="kitchen_light" data-type="light">
+                                <div class="device-icon">💡</div>
+                                <div class="device-name">Światło</div>
+                                <div class="device-status" id="kitchen_light_status">Wyłączone</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="device-card" data-device="kitchen_coffee" data-type="appliance">
+                                <div class="device-icon">☕</div>
+                                <div class="device-name">Ekspres</div>
+                                <div class="device-status" id="kitchen_coffee_status">Gotowy</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="device-card" data-device="kitchen_fridge" data-type="sensor">
+                                <div class="device-icon">🧊</div>
+                                <div class="device-name">Lodówka</div>
+                                <div class="device-value" id="kitchen_fridge_temp">4°C</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="device-card" data-device="kitchen_dishwasher" data-type="appliance">
+                                <div class="device-icon">🍽️</div>
+                                <div class="device-name">Zmywarka</div>
+                                <div class="device-status" id="kitchen_dishwasher_status">Gotowa</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Sensors -->
+                <div class="room-card">
+                    <h5 class="mb-3">📊 Czujniki</h5>
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="sensor-value" id="sensor-temp">22.5°C</div>
+                            <small class="text-muted">🌡️ Temperatura</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="sensor-value" id="sensor-humidity">45%</div>
+                            <small class="text-muted">💧 Wilgotność</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="sensor-value" id="sensor-co2">420</div>
+                            <small class="text-muted">🌬️ CO₂ (ppm)</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="sensor-value" id="sensor-light">850</div>
+                            <small class="text-muted">☀️ Światło (lux)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Energy -->
+                <div class="room-card">
+                    <h5 class="mb-3">⚡ Zużycie energii</h5>
+                    <div class="text-center mb-3">
+                        <div class="sensor-value" id="energy-current">2.4 kW</div>
+                        <small class="text-muted">Aktualne zużycie</small>
+                    </div>
+                    <div class="energy-bar mb-2">
+                        <div class="energy-bar-fill" id="energy-bar" style="width: 35%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>0 kW</span>
+                        <span>Limit: 7 kW</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span>Dzisiaj:</span>
+                        <strong id="energy-today">18.5 kWh</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Ten miesiąc:</span>
+                        <strong id="energy-month">342 kWh</strong>
+                    </div>
+                </div>
+
+                <!-- Automations -->
+                <div class="room-card">
+                    <h5 class="mb-3">🤖 Automatyzacje</h5>
+
+                    <div class="automation-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div>🌅 Budzik o 7:00</div>
+                            <small class="text-muted">Światło + rolety</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked data-automation="morning_alarm">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="automation-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div>🚪 Wyjście z domu</div>
+                            <small class="text-muted">Wyłącz wszystko</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked data-automation="leave_home">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="automation-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div>🌙 Tryb nocny 22:00</div>
+                            <small class="text-muted">Przyciemnij światła</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" data-automation="night_mode">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="automation-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div>🌡️ Termostat</div>
+                            <small class="text-muted">Utrzymuj 22°C</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked data-automation="thermostat">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Voice Command -->
+                <div class="room-card">
+                    <h5 class="mb-3">🎤 Komenda głosowa</h5>
+                    <div class="input-group">
+                        <input type="text" id="voice-input" class="form-control bg-dark text-light border-secondary"
+                               placeholder="np. Włącz światło w salonie">
+                        <button class="btn btn-primary" id="voice-btn">➤</button>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        Przykłady: "Włącz wszystkie światła", "Ustaw temperaturę na 24 stopnie"
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- IntentForge SDK -->
+    <script src="/sdk/intentforge.js" data-broker="ws://localhost:9001"></script>
+
+    <script>
+        // =================================================================
+        // State
+        // =================================================================
+        let api;
+        const devices = {};
+        const sensors = {
+            temp: 22.5,
+            humidity: 45,
+            co2: 420,
+            light: 850
+        };
+
+        // =================================================================
+        // Initialize
+        // =================================================================
+        async function init() {
+            try {
+                api = await IntentForge.connect('ws://localhost:9001', { debug: true });
+                document.getElementById('mqtt-status').className = 'badge bg-success';
+                document.getElementById('mqtt-status').textContent = '🟢 Połączony';
+
+                // Subscribe to device updates
+                subscribeToDevices();
+
+            } catch (error) {
+                document.getElementById('mqtt-status').className = 'badge bg-warning';
+                document.getElementById('mqtt-status').textContent = '🟡 Demo';
+            }
+
+            setupEventHandlers();
+            startSensorSimulation();
+        }
+
+        // =================================================================
+        // MQTT Subscriptions
+        // =================================================================
+        function subscribeToDevices() {
+            if (!api) return;
+
+            // Subscribe to all device state changes
+            api.on('device:state', (data) => {
+                updateDeviceUI(data.device_id, data.state);
+            });
+
+            // Subscribe to sensor updates
+            api.on('sensor:update', (data) => {
+                updateSensorUI(data.sensor, data.value);
+            });
+
+            // Subscribe to energy updates
+            api.on('energy:update', (data) => {
+                updateEnergyUI(data);
+            });
+        }
+
+        // =================================================================
+        // Device Control
+        // =================================================================
+        async function toggleDevice(deviceId, type) {
+            const card = document.querySelector(`[data-device="${deviceId}"]`);
+            const isActive = card.classList.contains('active');
+            const newState = !isActive;
+
+            // Update UI immediately
+            card.classList.toggle('active', newState);
+            updateDeviceStatus(deviceId, newState);
+
+            // Send command via MQTT/API
+            try {
+                await api._request('device', {
+                    action: 'set_state',
+                    device_id: deviceId,
+                    state: { on: newState }
+                });
+            } catch (error) {
+                console.log('Demo mode - device toggled locally');
+            }
+
+            devices[deviceId] = { on: newState };
+        }
+
+        async function setBrightness(deviceId, value) {
+            try {
+                await api._request('device', {
+                    action: 'set_state',
+                    device_id: deviceId,
+                    state: { brightness: parseInt(value) }
+                });
+            } catch (error) {
+                console.log('Demo mode - brightness set locally');
+            }
+
+            const statusEl = document.getElementById(`${deviceId}_status`);
+            if (statusEl) {
+                statusEl.textContent = value > 0 ? `${value}%` : 'Wyłączone';
+            }
+
+            const card = document.querySelector(`[data-device="${deviceId}"]`);
+            if (card) {
+                card.classList.toggle('active', value > 0);
+            }
+        }
+
+        async function activateScene(sceneName) {
+            const scenes = {
+                morning: {
+                    living_light: { on: true, brightness: 80 },
+                    bed_blinds: { on: true, position: 100 },
+                    kitchen_coffee: { on: true },
+                    bed_light: { on: false }
+                },
+                work: {
+                    living_light: { on: true, brightness: 100 },
+                    living_tv: { on: false },
+                    bed_blinds: { on: true, position: 50 }
+                },
+                movie: {
+                    living_light: { on: true, brightness: 20 },
+                    living_lamp: { on: true },
+                    living_tv: { on: true },
+                    bed_blinds: { on: true, position: 0 }
+                },
+                night: {
+                    living_light: { on: false },
+                    living_lamp: { on: false },
+                    living_tv: { on: false },
+                    bed_light: { on: true, brightness: 10 },
+                    bed_blinds: { on: true, position: 0 }
+                }
+            };
+
+            const sceneConfig = scenes[sceneName];
+            if (!sceneConfig) return;
+
+            // Update UI
+            document.querySelectorAll('.scene-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.scene === sceneName);
+            });
+
+            // Apply scene
+            for (const [deviceId, state] of Object.entries(sceneConfig)) {
+                const card = document.querySelector(`[data-device="${deviceId}"]`);
+                if (card) {
+                    card.classList.toggle('active', state.on);
+                    updateDeviceStatus(deviceId, state.on);
+                }
+
+                // Send to backend
+                try {
+                    await api._request('device', {
+                        action: 'set_state',
+                        device_id: deviceId,
+                        state: state
+                    });
+                } catch (error) {
+                    // Demo mode
+                }
+            }
+        }
+
+        async function processVoiceCommand(command) {
+            try {
+                // Use LLM-powered voice processing endpoint
+                const response = await fetch('/api/voice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'process',
+                        command: command,
+                        language: 'pl'
+                    })
+                });
+
+                if (!response.ok) throw new Error('API error');
+
+                const result = await response.json();
+
+                if (result.success && result.actions) {
+                    for (const action of result.actions) {
+                        if (action.type === 'device') {
+                            toggleDevice(action.device_id, action.device_type);
+                        } else if (action.type === 'scene') {
+                            activateScene(action.scene);
+                        }
+                    }
+                }
+
+                return result.response || 'Wykonano';
+
+            } catch (error) {
+                console.error('Voice API error:', error);
+                return 'Nie można połączyć się z API. Sprawdź czy serwer jest uruchomiony.';
+            }
+        }
+
+        // =================================================================
+        // UI Updates
+        // =================================================================
+        function updateDeviceUI(deviceId, state) {
+            const card = document.querySelector(`[data-device="${deviceId}"]`);
+            if (!card) return;
+
+            card.classList.toggle('active', state.on);
+            updateDeviceStatus(deviceId, state.on);
+
+            if (state.brightness !== undefined) {
+                const slider = card.querySelector('.brightness-slider');
+                if (slider) slider.value = state.brightness;
+            }
+        }
+
+        function updateDeviceStatus(deviceId, isOn) {
+            const statusEl = document.getElementById(`${deviceId}_status`);
+            if (statusEl) {
+                const type = document.querySelector(`[data-device="${deviceId}"]`)?.dataset.type;
+
+                const statusTexts = {
+                    light: isOn ? 'Włączone' : 'Wyłączone',
+                    tv: isOn ? 'Włączony' : 'Wyłączony',
+                    blinds: isOn ? 'Otwarte' : 'Zamknięte',
+                    fan: isOn ? 'Włączony' : 'Wyłączony',
+                    speaker: isOn ? 'Gra' : 'Wyłączony',
+                    appliance: isOn ? 'Pracuje' : 'Gotowy'
+                };
+
+                statusEl.textContent = statusTexts[type] || (isOn ? 'Włączone' : 'Wyłączone');
+            }
+        }
+
+        function updateSensorUI(sensor, value) {
+            const el = document.getElementById(`sensor-${sensor}`);
+            if (el) {
+                const units = { temp: '°C', humidity: '%', co2: '', light: '' };
+                el.textContent = value + (units[sensor] || '');
+            }
+        }
+
+        function updateEnergyUI(data) {
+            if (data.current) {
+                document.getElementById('energy-current').textContent = data.current + ' kW';
+                const percent = (data.current / 7) * 100;
+                document.getElementById('energy-bar').style.width = percent + '%';
+            }
+            if (data.today) {
+                document.getElementById('energy-today').textContent = data.today + ' kWh';
+            }
+            if (data.month) {
+                document.getElementById('energy-month').textContent = data.month + ' kWh';
+            }
+        }
+
+        // =================================================================
+        // Simulation (Demo Mode)
+        // =================================================================
+        function startSensorSimulation() {
+            setInterval(() => {
+                // Simulate sensor changes
+                sensors.temp += (Math.random() - 0.5) * 0.2;
+                sensors.humidity += (Math.random() - 0.5) * 1;
+                sensors.co2 += (Math.random() - 0.5) * 10;
+                sensors.light += (Math.random() - 0.5) * 20;
+
+                // Clamp values
+                sensors.temp = Math.max(18, Math.min(28, sensors.temp));
+                sensors.humidity = Math.max(30, Math.min(70, sensors.humidity));
+                sensors.co2 = Math.max(350, Math.min(1000, sensors.co2));
+                sensors.light = Math.max(0, Math.min(2000, sensors.light));
+
+                // Update UI
+                document.getElementById('sensor-temp').textContent = sensors.temp.toFixed(1) + '°C';
+                document.getElementById('sensor-humidity').textContent = Math.round(sensors.humidity) + '%';
+                document.getElementById('sensor-co2').textContent = Math.round(sensors.co2);
+                document.getElementById('sensor-light').textContent = Math.round(sensors.light);
+
+                // Simulate energy
+                const activeDevices = document.querySelectorAll('.device-card.active').length;
+                const energy = 0.5 + activeDevices * 0.3 + Math.random() * 0.2;
+                updateEnergyUI({ current: energy.toFixed(1) });
+
+            }, 3000);
+        }
+
+        // =================================================================
+        // Event Handlers
+        // =================================================================
+        function setupEventHandlers() {
+            // Device cards
+            document.querySelectorAll('.device-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('brightness-slider')) return;
+                    toggleDevice(card.dataset.device, card.dataset.type);
+                });
+            });
+
+            // Brightness sliders
+            document.querySelectorAll('.brightness-slider').forEach(slider => {
+                slider.addEventListener('input', (e) => {
+                    setBrightness(slider.dataset.device, e.target.value);
+                });
+                slider.addEventListener('click', (e) => e.stopPropagation());
+            });
+
+            // Scene buttons
+            document.querySelectorAll('.scene-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activateScene(btn.dataset.scene);
+                });
+            });
+
+            // Automation toggles
+            document.querySelectorAll('[data-automation]').forEach(toggle => {
+                toggle.addEventListener('change', async (e) => {
+                    try {
+                        await api._request('automation', {
+                            action: 'toggle',
+                            automation_id: toggle.dataset.automation,
+                            enabled: e.target.checked
+                        });
+                    } catch (error) {
+                        console.log('Demo mode - automation toggled');
+                    }
+                });
+            });
+
+            // Voice command
+            document.getElementById('voice-btn').addEventListener('click', async () => {
+                const input = document.getElementById('voice-input');
+                const command = input.value.trim();
+                if (command) {
+                    const response = await processVoiceCommand(command);
+                    alert(response);
+                    input.value = '';
+                }
+            });
+
+            document.getElementById('voice-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('voice-btn').click();
+                }
+            });
+        }
+
+        // =================================================================
+        // Start
+        // =================================================================
+        init();
+    </script>
+</body>
+</html>

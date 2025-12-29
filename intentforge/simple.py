@@ -89,7 +89,7 @@ def generate(description: str, **kwargs) -> str:
         raise GenerationError(result.validation_errors)
 
 
-def crud(table: str, fields: list[dict[str, Any]] = None, **kwargs) -> dict[str, str]:
+def crud(table: str, fields: list[dict[str, Any]] | None = None, **kwargs) -> dict[str, str]:
     """
     Generate complete CRUD for a table - one function call
 
@@ -144,7 +144,7 @@ def form(form_id: str, fields: list[dict[str, Any]], **kwargs) -> dict[str, str]
     return FullstackPatterns.form_to_database(config)
 
 
-def query(description: str, table: str = None, **kwargs) -> tuple:
+def query(description: str, table: str | None = None, **kwargs) -> tuple:
     """
     Generate safe SQL query from natural language
 

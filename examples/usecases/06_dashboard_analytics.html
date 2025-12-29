@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Analytics - IntentForge Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #f0f2f5; }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-value { font-size: 2rem; font-weight: bold; }
+        .stat-change { font-size: 0.85rem; }
+        .stat-change.positive { color: #28a745; }
+        .stat-change.negative { color: #dc3545; }
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .activity-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .activity-item:last-child { border-bottom: none; }
+        .refresh-btn { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+        .data-table { font-size: 0.9rem; }
+        .intent-query {
+            background: #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2>📊 Dashboard Analytics</h2>
+                        <small class="text-muted">Dane generowane przez IntentForge AI</small>
+                    </div>
+                    <div>
+                        <span id="last-update" class="text-muted me-3">Ostatnia aktualizacja: --:--</span>
+                        <span id="connection-status" class="badge bg-secondary">Łączenie...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Natural Language Query -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="intent-query">
+                    <form id="query-form" class="d-flex gap-2">
+                        <input type="text" id="query-input" class="form-control"
+                               placeholder="Zapytaj o dane, np. 'Pokaż sprzedaż z ostatniego tygodnia' lub 'Porównaj przychody miesięczne'">
+                        <button type="submit" class="btn btn-primary px-4">
+                            🔍 Analizuj
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <small class="text-muted">Przychód</small>
+                            <div class="stat-value text-primary" id="stat-revenue">--</div>
+                        </div>
+                        <div class="display-4 opacity-25">💰</div>
+                    </div>
+                    <div class="stat-change positive" id="stat-revenue-change">-- vs poprzedni okres</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <small class="text-muted">Zamówienia</small>
+                            <div class="stat-value text-success" id="stat-orders">--</div>
+                        </div>
+                        <div class="display-4 opacity-25">📦</div>
+                    </div>
+                    <div class="stat-change positive" id="stat-orders-change">-- vs poprzedni okres</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <small class="text-muted">Użytkownicy</small>
+                            <div class="stat-value text-info" id="stat-users">--</div>
+                        </div>
+                        <div class="display-4 opacity-25">👥</div>
+                    </div>
+                    <div class="stat-change positive" id="stat-users-change">-- vs poprzedni okres</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <small class="text-muted">Konwersja</small>
+                            <div class="stat-value text-warning" id="stat-conversion">--</div>
+                        </div>
+                        <div class="display-4 opacity-25">📈</div>
+                    </div>
+                    <div class="stat-change negative" id="stat-conversion-change">-- vs poprzedni okres</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <div class="col-lg-8 mb-3">
+                <div class="chart-card h-100">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5>📈 Przychód w czasie</h5>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary active" data-period="week">Tydzień</button>
+                            <button class="btn btn-outline-secondary" data-period="month">Miesiąc</button>
+                            <button class="btn btn-outline-secondary" data-period="year">Rok</button>
+                        </div>
+                    </div>
+                    <canvas id="revenue-chart" height="250"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-3">
+                <div class="chart-card h-100">
+                    <h5 class="mb-3">🥧 Źródła ruchu</h5>
+                    <canvas id="traffic-chart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table & Activity -->
+        <div class="row">
+            <div class="col-lg-8 mb-3">
+                <div class="chart-card">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5>🏆 Top produkty</h5>
+                        <button class="btn btn-sm btn-outline-primary" id="export-btn">
+                            📥 Eksportuj
+                        </button>
+                    </div>
+                    <!-- Table with intent attribute - auto-loaded by IntentForge -->
+                    <table id="products-table" class="table data-table"
+                           intent="Zwróć listę 10 najpopularniejszych produktów z nazwą, kategorią, ilością sprzedaną i przychodem">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Produkt</th>
+                                <th>Kategoria</th>
+                                <th>Sprzedano</th>
+                                <th>Przychód</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data loaded via intent -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-3">
+                <div class="chart-card">
+                    <h5 class="mb-3">🔔 Ostatnia aktywność</h5>
+                    <div id="activity-feed">
+                        <!-- Activity items -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refresh Button -->
+    <button class="btn btn-primary btn-lg rounded-circle refresh-btn" id="refresh-btn" title="Odśwież dane">
+        🔄
+    </button>
+
+    <!-- IntentForge SDK -->
+    <script src="/sdk/intentforge.js" data-broker="ws://localhost:9001"></script>
+    <script src="/examples/static/intent.js"></script>
+
+    <script>
+        // =================================================================
+        // State & Charts
+        // =================================================================
+        let api;
+        let revenueChart, trafficChart;
+
+        // =================================================================
+        // Initialize
+        // =================================================================
+        async function init() {
+            try {
+                api = await IntentForge.connect('ws://localhost:9001', { debug: true });
+                document.getElementById('connection-status').className = 'badge bg-success';
+                document.getElementById('connection-status').textContent = '🟢 Połączony';
+            } catch (error) {
+                document.getElementById('connection-status').className = 'badge bg-warning';
+                document.getElementById('connection-status').textContent = '🟡 Demo mode';
+            }
+
+            initCharts();
+            loadDashboardData();
+            setupEventHandlers();
+            startRealTimeUpdates();
+        }
+
+        // =================================================================
+        // Charts Setup
+        // =================================================================
+        function initCharts() {
+            // Revenue Chart
+            const revenueCtx = document.getElementById('revenue-chart').getContext('2d');
+            revenueChart = new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Przychód (PLN)',
+                        data: [],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+
+            // Traffic Chart
+            const trafficCtx = document.getElementById('traffic-chart').getContext('2d');
+            trafficChart = new Chart(trafficCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Organic', 'Direct', 'Social', 'Referral', 'Email'],
+                    datasets: [{
+                        data: [35, 25, 20, 12, 8],
+                        backgroundColor: ['#667eea', '#28a745', '#ffc107', '#17a2b8', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // =================================================================
+        // Data Loading
+        // =================================================================
+        async function loadDashboardData() {
+            try {
+                // Try to load from API
+                const stats = await loadStats();
+                const chartData = await loadChartData('week');
+                const activities = await loadActivities();
+
+                updateStats(stats);
+                updateRevenueChart(chartData);
+                updateActivityFeed(activities);
+
+            } catch (error) {
+                console.log('Using demo data');
+                loadDemoData();
+            }
+
+            document.getElementById('last-update').textContent =
+                `Ostatnia aktualizacja: ${new Date().toLocaleTimeString('pl-PL')}`;
+        }
+
+        async function loadStats() {
+            if (api) {
+                return await api._request('analytics', {
+                    action: 'stats',
+                    period: 'current_month'
+                });
+            }
+            throw new Error('API not available');
+        }
+
+        async function loadChartData(period) {
+            if (api) {
+                return await api._request('analytics', {
+                    action: 'chart_data',
+                    metric: 'revenue',
+                    period: period
+                });
+            }
+            throw new Error('API not available');
+        }
+
+        async function loadActivities() {
+            if (api) {
+                return await api._request('analytics', {
+                    action: 'activities',
+                    limit: 10
+                });
+            }
+            throw new Error('API not available');
+        }
+
+        async function loadDemoData() {
+            // Load stats from API (LLM-powered)
+            try {
+                const statsResponse = await fetch('/api/analytics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'stats', period: 'current_month' })
+                });
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    if (stats.success) updateStats(stats);
+                }
+            } catch (e) {
+                console.log('Stats API error, using fallback');
+            }
+
+            // Load chart data from API
+            try {
+                const chartResponse = await fetch('/api/analytics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'chart_data', metric: 'revenue', period: 'week' })
+                });
+                if (chartResponse.ok) {
+                    const chartData = await chartResponse.json();
+                    if (chartData.success) updateRevenueChart(chartData);
+                }
+            } catch (e) {
+                console.log('Chart API error, using fallback');
+            }
+
+            // Load activities from API
+            try {
+                const activitiesResponse = await fetch('/api/analytics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'activities', limit: 5 })
+                });
+                if (activitiesResponse.ok) {
+                    const activitiesData = await activitiesResponse.json();
+                    if (activitiesData.success) updateActivityFeed(activitiesData.activities);
+                }
+            } catch (e) {
+                console.log('Activities API error, using fallback');
+            }
+
+            // Load products from API
+            try {
+                const productsResponse = await fetch('/api/analytics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'products', limit: 5 })
+                });
+                if (productsResponse.ok) {
+                    const productsData = await productsResponse.json();
+                    if (productsData.success) {
+                        const tbody = document.querySelector('#products-table tbody');
+                        tbody.innerHTML = productsData.products.map(p => `
+                            <tr>
+                                <td>${p.rank}</td>
+                                <td><strong>${p.name}</strong></td>
+                                <td><span class="badge bg-secondary">${p.category}</span></td>
+                                <td>${p.sold}</td>
+                                <td class="text-success">${p.revenue}</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (e) {
+                console.log('Products API error, using fallback');
+            }
+        }
+
+        // =================================================================
+        // UI Updates
+        // =================================================================
+        function updateStats(stats) {
+            document.getElementById('stat-revenue').textContent =
+                formatCurrency(stats.revenue);
+            document.getElementById('stat-revenue-change').textContent =
+                formatChange(stats.revenue_change);
+            document.getElementById('stat-revenue-change').className =
+                `stat-change ${stats.revenue_change >= 0 ? 'positive' : 'negative'}`;
+
+            document.getElementById('stat-orders').textContent =
+                formatNumber(stats.orders);
+            document.getElementById('stat-orders-change').textContent =
+                formatChange(stats.orders_change);
+            document.getElementById('stat-orders-change').className =
+                `stat-change ${stats.orders_change >= 0 ? 'positive' : 'negative'}`;
+
+            document.getElementById('stat-users').textContent =
+                formatNumber(stats.users);
+            document.getElementById('stat-users-change').textContent =
+                formatChange(stats.users_change);
+            document.getElementById('stat-users-change').className =
+                `stat-change ${stats.users_change >= 0 ? 'positive' : 'negative'}`;
+
+            document.getElementById('stat-conversion').textContent =
+                stats.conversion + '%';
+            document.getElementById('stat-conversion-change').textContent =
+                formatChange(stats.conversion_change);
+            document.getElementById('stat-conversion-change').className =
+                `stat-change ${stats.conversion_change >= 0 ? 'positive' : 'negative'}`;
+        }
+
+        function updateRevenueChart(chartData) {
+            revenueChart.data.labels = chartData.labels;
+            revenueChart.data.datasets[0].data = chartData.data;
+            revenueChart.update();
+        }
+
+        function updateActivityFeed(activities) {
+            const feed = document.getElementById('activity-feed');
+            feed.innerHTML = activities.map(a => `
+                <div class="activity-item d-flex align-items-center">
+                    <span class="me-3" style="font-size: 1.5rem;">${a.icon}</span>
+                    <div class="flex-grow-1">
+                        <div>${a.message}</div>
+                        <small class="text-muted">${a.time}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // =================================================================
+        // Natural Language Query (LLM-powered)
+        // =================================================================
+        async function executeQuery(query) {
+            try {
+                // Use LLM-powered analytics query endpoint
+                const response = await fetch('/api/analytics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'query', query: query })
+                });
+
+                if (!response.ok) throw new Error('API error');
+
+                const result = await response.json();
+
+                // Display results based on type
+                if (result.chart) {
+                    updateRevenueChart(result.chart);
+                }
+                if (result.stats) {
+                    updateStats(result.stats);
+                }
+                if (result.message) {
+                    // Show LLM response in a modal or alert
+                    showQueryResult(result.message);
+                }
+
+            } catch (error) {
+                console.error('Query error:', error);
+                alert('Nie udało się wykonać zapytania. Sprawdź czy serwer jest uruchomiony.');
+            }
+        }
+
+        function showQueryResult(message) {
+            // Create a simple modal to show LLM response
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+            modal.innerHTML = `
+                <div style="background:white;border-radius:12px;padding:20px;max-width:600px;max-height:80vh;overflow:auto;">
+                    <h5>📊 Wynik analizy AI</h5>
+                    <div style="white-space:pre-wrap;">${message}</div>
+                    <button class="btn btn-primary mt-3" onclick="this.closest('div').parentElement.remove()">Zamknij</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // =================================================================
+        // Real-time Updates
+        // =================================================================
+        function startRealTimeUpdates() {
+            if (!api) return;
+
+            api.on('analytics:update', (data) => {
+                if (data.stats) updateStats(data.stats);
+            });
+
+            api.on('activity:new', (data) => {
+                const feed = document.getElementById('activity-feed');
+                const item = document.createElement('div');
+                item.className = 'activity-item d-flex align-items-center';
+                item.innerHTML = `
+                    <span class="me-3" style="font-size: 1.5rem;">${data.icon}</span>
+                    <div class="flex-grow-1">
+                        <div>${data.message}</div>
+                        <small class="text-muted">Teraz</small>
+                    </div>
+                `;
+                feed.insertBefore(item, feed.firstChild);
+            });
+        }
+
+        // =================================================================
+        // Event Handlers
+        // =================================================================
+        function setupEventHandlers() {
+            // Query form
+            document.getElementById('query-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const query = document.getElementById('query-input').value.trim();
+                if (query) executeQuery(query);
+            });
+
+            // Period buttons
+            document.querySelectorAll('[data-period]').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    document.querySelectorAll('[data-period]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    try {
+                        const data = await loadChartData(btn.dataset.period);
+                        updateRevenueChart(data);
+                    } catch (error) {
+                        // Demo data for different periods
+                        const periods = {
+                            week: { labels: ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Ndz'], data: [12500, 15200, 14800, 18900, 22100, 19500, 21430] },
+                            month: { labels: ['Tydz 1', 'Tydz 2', 'Tydz 3', 'Tydz 4'], data: [85000, 92000, 78000, 125430] },
+                            year: { labels: ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'], data: [120000, 135000, 142000, 128000, 156000, 178000, 165000, 189000, 201000, 195000, 220000, 245000] }
+                        };
+                        updateRevenueChart(periods[btn.dataset.period]);
+                    }
+                });
+            });
+
+            // Refresh button
+            document.getElementById('refresh-btn').addEventListener('click', () => {
+                loadDashboardData();
+            });
+
+            // Export button
+            document.getElementById('export-btn').addEventListener('click', () => {
+                const table = document.getElementById('products-table');
+                const rows = Array.from(table.querySelectorAll('tr'));
+                const csv = rows.map(row =>
+                    Array.from(row.querySelectorAll('th, td'))
+                        .map(cell => `"${cell.textContent.trim()}"`)
+                        .join(',')
+                ).join('\n');
+
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'products-report.csv';
+                a.click();
+            });
+        }
+
+        // =================================================================
+        // Helpers
+        // =================================================================
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pl-PL', {
+                style: 'currency',
+                currency: 'PLN',
+                maximumFractionDigits: 0
+            }).format(value);
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat('pl-PL').format(value);
+        }
+
+        function formatChange(value) {
+            const sign = value >= 0 ? '+' : '';
+            return `${sign}${value}% vs poprzedni okres`;
+        }
+
+        // =================================================================
+        // Start
+        // =================================================================
+        init();
+    </script>
+</body>
+</html>

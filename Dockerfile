@@ -4,7 +4,7 @@
 # =============================================================================
 # Stage 1: Builder
 # =============================================================================
-FROM python:3.11-slim AS builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
@@ -25,12 +25,20 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
 # =============================================================================
 # Stage 2: Runtime
 # =============================================================================
-FROM python:3.11-slim AS runtime
+FROM python:3.12-slim AS runtime
 
 # Labels
 LABEL maintainer="Softreck <info@softreck.dev>"
 LABEL version="0.1.0"
 LABEL description="IntentForge - NLP-driven Code Generation Framework"
+
+# Install Tesseract OCR and language packs
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr \
+    tesseract-ocr-pol \
+    tesseract-ocr-eng \
+    libtesseract-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN groupadd -r intentforge && useradd -r -g intentforge intentforge
@@ -40,6 +48,18 @@ WORKDIR /app
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
+
+# Install pytesseract (OCR Python wrapper) and common packages for code execution
+RUN pip install --no-cache-dir \
+    pytesseract pillow \
+    requests httpx aiohttp \
+    numpy pandas \
+    beautifulsoup4 lxml \
+    pyyaml toml \
+    pdf2image
+
+# Make venv writable for runtime package installation
+RUN chmod -R a+w /opt/venv
 
 # Copy application code
 COPY intentforge/ ./intentforge/

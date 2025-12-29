@@ -691,7 +691,9 @@ class LiteLLMProvider(BaseLLMProvider):
 # =============================================================================
 
 
-def get_llm_provider(provider: str = None, model: str = None, **kwargs) -> BaseLLMProvider:
+def get_llm_provider(
+    provider: str | None = None, model: str | None = None, **kwargs
+) -> BaseLLMProvider:
     """
     Factory function to get appropriate LLM provider
 
@@ -760,7 +762,11 @@ def get_llm_provider(provider: str = None, model: str = None, **kwargs) -> BaseL
 
 
 async def generate(
-    prompt: str, model: str = None, provider: str = None, system: str = None, **kwargs
+    prompt: str,
+    model: str | None = None,
+    provider: str | None = None,
+    system: str | None = None,
+    **kwargs,
 ) -> str:
     """
     Quick generation helper
@@ -775,7 +781,11 @@ async def generate(
 
 
 async def generate_code(
-    description: str, language: str = "python", model: str = None, provider: str = None, **kwargs
+    description: str,
+    language: str = "python",
+    model: str | None = None,
+    provider: str | None = None,
+    **kwargs,
 ) -> str:
     """
     Quick code generation helper
@@ -794,19 +804,19 @@ async def generate_code(
 # =============================================================================
 
 __all__ = [
-    # Types
-    "LLMProvider",
-    "LLMConfig",
-    "LLMResponse",
+    "AnthropicProvider",
     # Providers
     "BaseLLMProvider",
-    "AnthropicProvider",
-    "OpenAIProvider",
-    "OllamaProvider",
+    "LLMConfig",
+    # Types
+    "LLMProvider",
+    "LLMResponse",
     "LiteLLMProvider",
-    # Factory
-    "get_llm_provider",
+    "OllamaProvider",
+    "OpenAIProvider",
     # Helpers
     "generate",
     "generate_code",
+    # Factory
+    "get_llm_provider",
 ]

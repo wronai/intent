@@ -1,0 +1,1 @@
+"""AutoWorker validation tests package"""

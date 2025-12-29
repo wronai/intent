@@ -24,7 +24,7 @@ T = TypeVar("T")
 
 
 @dataclass
-class CacheEntry(Generic[T]):
+class CacheEntry[T]:
     """Cached item with metadata"""
 
     key: str
@@ -461,7 +461,7 @@ class IntentCache:
     def invalidate_by_type(self, intent_type: str) -> int:
         """Invalidate all cached entries of a specific type"""
         count = 0
-        for key in self._backend.keys():
+        for key in self._backend:
             entry = self._backend.get(key)
             if entry and entry.metadata.get("intent_type") == intent_type:
                 self._backend.delete(key)
@@ -483,10 +483,10 @@ class IntentCache:
         Find similar cached result using fuzzy matching
         Useful when exact match isn't found
         """
-        _ = self.fingerprint_gen.generate_partial(description, intent_type)  # noqa: F841
+        _ = self.fingerprint_gen.generate_partial(description, intent_type)
 
         # Search through cache for similar entries
-        for key in self._backend.keys():
+        for key in self._backend:
             entry = self._backend.get(key)
             if entry and entry.metadata.get("intent_type") == intent_type:
                 cached_desc = entry.metadata.get("description_preview", "")

@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload & Processing - IntentForge Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .upload-container { max-width: 800px; margin: 50px auto; }
+        .upload-zone {
+            border: 3px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        .upload-zone.uploading {
+            border-color: #ffc107;
+            background: rgba(255, 193, 7, 0.05);
+        }
+        .upload-icon { font-size: 4rem; margin-bottom: 20px; }
+        .file-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .file-preview {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .file-icon {
+            width: 60px;
+            height: 60px;
+            background: #e9ecef;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .progress-bar-animated {
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+        .processing-result {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .ai-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <div class="upload-container">
+            <!-- Header -->
+            <div class="text-center mb-4">
+                <h1>📁 File Upload & AI Processing</h1>
+                <p class="text-muted">Upload files for automatic AI analysis and processing</p>
+            </div>
+
+            <!-- Upload Zone -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="upload-zone" id="upload-zone">
+                        <div class="upload-icon">📤</div>
+                        <h4>Przeciągnij pliki tutaj</h4>
+                        <p class="text-muted mb-3">lub kliknij aby wybrać</p>
+                        <input type="file" id="file-input" multiple hidden>
+                        <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                            Wybierz pliki
+                        </button>
+                        <p class="text-muted mt-3 small">
+                            Obsługiwane: obrazy, PDF, CSV, JSON, TXT (max 10MB)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Processing Options -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">⚙️ Opcje przetwarzania</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="opt-ocr" checked>
+                                <label class="form-check-label" for="opt-ocr">
+                                    📝 OCR (rozpoznawanie tekstu)
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="opt-analyze" checked>
+                                <label class="form-check-label" for="opt-analyze">
+                                    🔍 Analiza AI zawartości
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="opt-thumbnail">
+                                <label class="form-check-label" for="opt-thumbnail">
+                                    🖼️ Generuj miniaturki
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="opt-compress">
+                                <label class="form-check-label" for="opt-compress">
+                                    📦 Kompresuj pliki
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="opt-convert">
+                                <label class="form-check-label" for="opt-convert">
+                                    🔄 Konwertuj format
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="opt-extract">
+                                <label class="form-check-label" for="opt-extract">
+                                    📊 Ekstrakcja danych
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File List -->
+            <div id="file-list">
+                <!-- Files will be rendered here -->
+            </div>
+
+            <!-- Bulk Actions -->
+            <div class="d-flex justify-content-between mt-4" id="bulk-actions" style="display: none !important;">
+                <button class="btn btn-outline-danger" id="btn-clear">
+                    🗑️ Wyczyść wszystko
+                </button>
+                <button class="btn btn-success" id="btn-download-all">
+                    📥 Pobierz wyniki
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- IntentForge SDK -->
+    <script src="/sdk/intentforge.js" data-broker="ws://localhost:9001"></script>
+
+    <script>
+        // =================================================================
+        // State
+        // =================================================================
+        let api;
+        const files = new Map();
+        const ALLOWED_TYPES = [
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+            'application/pdf',
+            'text/csv', 'application/json', 'text/plain',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ];
+        const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+        // =================================================================
+        // Initialize
+        // =================================================================
+        async function init() {
+            try {
+                api = await IntentForge.connect('ws://localhost:9001', { debug: true });
+            } catch (error) {
+                console.log('Running in demo mode');
+            }
+
+            setupEventHandlers();
+        }
+
+        // =================================================================
+        // File Handling
+        // =================================================================
+        function handleFiles(fileList) {
+            for (const file of fileList) {
+                if (!validateFile(file)) continue;
+
+                const fileId = generateId();
+                files.set(fileId, {
+                    id: fileId,
+                    file: file,
+                    status: 'pending',
+                    progress: 0,
+                    result: null
+                });
+
+                renderFileItem(fileId);
+                processFile(fileId);
+            }
+
+            updateBulkActions();
+        }
+
+        function validateFile(file) {
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                alert(`Nieobsługiwany typ pliku: ${file.type}`);
+                return false;
+            }
+            if (file.size > MAX_SIZE) {
+                alert(`Plik zbyt duży: ${(file.size / 1024 / 1024).toFixed(1)}MB (max 10MB)`);
+                return false;
+            }
+            return true;
+        }
+
+        // Convert file to base64 for Vision API
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // Remove data URL prefix (e.g., "data:image/png;base64,")
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function processFile(fileId) {
+            const fileData = files.get(fileId);
+            if (!fileData) return;
+
+            fileData.status = 'uploading';
+            updateFileItem(fileId);
+
+            try {
+                // Get processing options
+                const options = {
+                    ocr: document.getElementById('opt-ocr').checked,
+                    analyze: document.getElementById('opt-analyze').checked,
+                    thumbnail: document.getElementById('opt-thumbnail').checked,
+                    compress: document.getElementById('opt-compress').checked,
+                    convert: document.getElementById('opt-convert').checked,
+                    extract: document.getElementById('opt-extract').checked
+                };
+
+                // Simulate upload progress
+                for (let i = 0; i <= 100; i += 10) {
+                    fileData.progress = i;
+                    updateFileItem(fileId);
+                    await sleep(100);
+                }
+
+                fileData.status = 'processing';
+                updateFileItem(fileId);
+
+                // Process with IntentForge
+                let result;
+                try {
+                    const formData = new FormData();
+                    formData.append('file', fileData.file);
+                    formData.append('options', JSON.stringify(options));
+
+                    const response = await fetch('/api/file/process', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        result = await response.json();
+                    } else {
+                        throw new Error('Upload failed');
+                    }
+                } catch (error) {
+                    // Demo mode - simulate processing
+                    result = await simulateProcessing(fileData.file, options);
+                }
+
+                fileData.status = 'completed';
+                fileData.result = result;
+                updateFileItem(fileId);
+
+            } catch (error) {
+                fileData.status = 'error';
+                fileData.error = error.message;
+                updateFileItem(fileId);
+            }
+        }
+
+        async function simulateProcessing(file, options) {
+            // Try to use LLM-powered file analysis
+            const result = {
+                filename: file.name,
+                size: file.size,
+                type: file.type,
+                processed_at: new Date().toISOString()
+            };
+
+            // For text-based files, read content and analyze with LLM
+            if (file.type === 'text/plain' || file.type === 'text/csv' ||
+                file.type === 'application/json' || file.name.endsWith('.csv')) {
+                try {
+                    const content = await file.text();
+
+                    if (options.analyze) {
+                        const response = await fetch('/api/file', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'analyze',
+                                filename: file.name,
+                                content: content.substring(0, 2000),
+                                file_type: file.type,
+                                options: options
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success && data.analysis) {
+                                result.analysis = data.analysis;
+                            }
+                        }
+                    }
+
+                    if (options.extract) {
+                        const response = await fetch('/api/file', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'extract',
+                                filename: file.name,
+                                content: content.substring(0, 2000)
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success && data.extracted_data) {
+                                result.extracted_data = data.extracted_data;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('LLM analysis failed, using basic info');
+                }
+            }
+
+            // For images - use PROACTIVE processing pipeline with intelligent fallback
+            if (file.type.startsWith('image/')) {
+                if (options.thumbnail) {
+                    result.thumbnail_url = URL.createObjectURL(file);
+                }
+
+                // Convert image to base64 for Vision API
+                const imageBase64 = await fileToBase64(file);
+
+                // Use PROACTIVE processing - intelligent OCR with fallback
+                if (options.analyze || options.ocr || options.extract) {
+                    try {
+                        // First try proactive endpoint (handles OCR failures intelligently)
+                        const response = await fetch('/api/proactive/process', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                content: imageBase64,
+                                type: 'image',
+                                options: {
+                                    extract_data: options.extract,
+                                    auto_ocr: options.ocr
+                                }
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success) {
+                                // Get OCR text (proactive handles fallback automatically)
+                                if (data.ocr?.success && data.ocr?.text) {
+                                    result.ocr_text = data.ocr.text;
+                                    result.ocr_method = data.ocr.method || 'proactive';
+                                    result.ocr_confidence = data.ocr.confidence;
+                                }
+
+                                // Get Vision analysis
+                                if (data.vision?.success && data.vision?.response) {
+                                    result.analysis = {
+                                        description: data.vision.response,
+                                        model: data.vision.model
+                                    };
+                                }
+
+                                // Get extracted data
+                                if (data.extracted_data?.data) {
+                                    result.extracted_data = data.extracted_data.data;
+                                }
+
+                                // Document type from processing
+                                if (data.processing?.context?.type) {
+                                    result.document_type = data.processing.context.type;
+                                }
+                            } else if (data.error) {
+                                result.analysis = { description: `Błąd: ${data.error}` };
+                            }
+                        } else {
+                            // Fallback to standard document processing
+                            throw new Error('Proactive processing unavailable');
+                        }
+                    } catch (e) {
+                        console.log('Proactive processing failed, trying standard:', e);
+
+                        // Fallback to standard processing
+                        try {
+                            const response = await fetch('/api/file', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    action: 'process_document',
+                                    image_base64: imageBase64
+                                })
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.success) {
+                                    result.document_type = data.document_type;
+                                    result.phases = data.phases;
+                                    result.extracted_data = data.extracted_data;
+                                    result.ocr_text = data.raw_text;
+
+                                    if (data.phases?.vision?.analysis) {
+                                        result.analysis = {
+                                            description: data.phases.vision.analysis,
+                                            document_type: data.document_type,
+                                            model: data.phases.vision.model
+                                        };
+                                    }
+
+                                    result.ocr_method = data.phases?.ocr?.method || 'unknown';
+                                }
+                            }
+                        } catch (fallbackError) {
+                            console.log('Fallback also failed:', fallbackError);
+                            result.analysis = { description: `Błąd przetwarzania: ${fallbackError.message}` };
+                        }
+                    }
+                } else {
+                    // Simple analysis without full pipeline
+                    if (options.analyze) {
+                        try {
+                            const response = await fetch('/api/file', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    action: 'analyze',
+                                    filename: file.name,
+                                    image_base64: imageBase64,
+                                    file_type: file.type
+                                })
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.success && data.analysis) {
+                                    result.analysis = data.analysis;
+                                } else if (data.error) {
+                                    result.analysis = { description: `Błąd: ${data.error}` };
+                                }
+                            }
+                        } catch (e) {
+                            console.log('Vision analysis failed:', e);
+                            result.analysis = { description: `Błąd połączenia z Vision API: ${e.message}` };
+                        }
+                    }
+
+                    if (options.ocr) {
+                        try {
+                            const response = await fetch('/api/file', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    action: 'ocr',
+                                    image_base64: imageBase64
+                                })
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.success) {
+                                    result.ocr_text = data.text;
+                                    result.ocr_method = data.method;
+                                    result.ocr_model = data.model;
+                                } else {
+                                    result.ocr_text = `Błąd OCR: ${data.error}`;
+                                }
+                            }
+                        } catch (e) {
+                            console.log('OCR failed:', e);
+                            result.ocr_text = `Błąd połączenia z OCR API: ${e.message}`;
+                        }
+                    }
+                }
+            }
+
+            // For PDFs
+            if (file.type === 'application/pdf') {
+                result.analysis = {
+                    description: "Analiza PDF wymaga biblioteki do ekstrakcji tekstu (np. PyPDF2, pdfplumber)",
+                    note: "Backend może przetworzyć PDF i wysłać tekst do LLM"
+                };
+            }
+
+            return result;
+        }
+
+        // =================================================================
+        // Rendering
+        // =================================================================
+        function renderFileItem(fileId) {
+            const fileData = files.get(fileId);
+            if (!fileData) return;
+
+            const list = document.getElementById('file-list');
+
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.id = `file-${fileId}`;
+            item.innerHTML = getFileItemHTML(fileData);
+
+            list.appendChild(item);
+        }
+
+        function updateFileItem(fileId) {
+            const fileData = files.get(fileId);
+            if (!fileData) return;
+
+            const item = document.getElementById(`file-${fileId}`);
+            if (item) {
+                item.innerHTML = getFileItemHTML(fileData);
+            }
+        }
+
+        function getFileItemHTML(fileData) {
+            const file = fileData.file;
+            const isImage = file.type.startsWith('image/');
+
+            let preview = '';
+            if (isImage) {
+                preview = `<img src="${URL.createObjectURL(file)}" class="file-preview" alt="${file.name}">`;
+            } else {
+                const icons = {
+                    'application/pdf': '📄',
+                    'text/csv': '📊',
+                    'application/json': '📋',
+                    'text/plain': '📝'
+                };
+                preview = `<div class="file-icon">${icons[file.type] || '📁'}</div>`;
+            }
+
+            let statusBadge = '';
+            let progressBar = '';
+            let resultSection = '';
+
+            switch (fileData.status) {
+                case 'pending':
+                    statusBadge = '<span class="badge bg-secondary">Oczekuje</span>';
+                    break;
+                case 'uploading':
+                    statusBadge = '<span class="badge bg-warning">Wysyłanie</span>';
+                    progressBar = `
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar progress-bar-animated" style="width: ${fileData.progress}%"></div>
+                        </div>
+                    `;
+                    break;
+                case 'processing':
+                    statusBadge = '<span class="badge bg-info">Przetwarzanie <span class="ai-badge">AI</span></span>';
+                    progressBar = `
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" style="width: 100%"></div>
+                        </div>
+                    `;
+                    break;
+                case 'completed':
+                    statusBadge = '<span class="badge bg-success">Gotowe</span>';
+                    if (fileData.result) {
+                        resultSection = renderResult(fileData.result);
+                    }
+                    break;
+                case 'error':
+                    statusBadge = '<span class="badge bg-danger">Błąd</span>';
+                    resultSection = `<div class="alert alert-danger mt-2 mb-0">${fileData.error}</div>`;
+                    break;
+            }
+
+            return `
+                <div class="d-flex align-items-start">
+                    ${preview}
+                    <div class="flex-grow-1 ms-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>${escapeHtml(file.name)}</strong>
+                                <div class="text-muted small">
+                                    ${formatSize(file.size)} • ${file.type || 'unknown'}
+                                </div>
+                            </div>
+                            <div>
+                                ${statusBadge}
+                                <button class="btn btn-sm btn-outline-danger ms-2" onclick="removeFile('${fileData.id}')">
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                        ${progressBar}
+                    </div>
+                </div>
+                ${resultSection}
+            `;
+        }
+
+        function renderResult(result) {
+            let html = '<div class="processing-result mt-3">';
+            html += '<h6 class="mb-2">📊 Wyniki przetwarzania</h6>';
+
+            // Show document type if detected
+            if (result.document_type) {
+                const docTypeLabels = {
+                    'receipt': '🧾 Paragon/Rachunek',
+                    'invoice': '📄 Faktura',
+                    'id_card': '🪪 Dowód osobisty',
+                    'drivers_license': '🚗 Prawo jazdy',
+                    'bill': '💰 Rachunek/Opłata',
+                    'contract': '📝 Umowa',
+                    'document': '📋 Dokument'
+                };
+                html += `
+                    <div class="mb-2">
+                        <span class="badge bg-primary">${docTypeLabels[result.document_type] || result.document_type}</span>
+                        ${result.ocr_method ? `<span class="badge bg-secondary ms-1">OCR: ${result.ocr_method}</span>` : ''}
+                    </div>
+                `;
+            }
+
+            // Show processing phases if available
+            if (result.phases) {
+                html += '<div class="mb-2"><strong>🔄 Fazy przetwarzania:</strong><ul class="small mb-0">';
+                if (result.phases.vision) {
+                    const vIcon = result.phases.vision.success ? '✅' : '❌';
+                    html += `<li>${vIcon} Faza 1: Analiza Vision (${result.phases.vision.model || 'llava'})</li>`;
+                }
+                if (result.phases.ocr) {
+                    const oIcon = result.phases.ocr.success ? '✅' : '❌';
+                    html += `<li>${oIcon} Faza 2: OCR ${result.phases.ocr.method || ''} (${result.phases.ocr.char_count || 0} znaków)</li>`;
+                }
+                if (result.phases.extraction) {
+                    const eIcon = result.phases.extraction.success ? '✅' : '❌';
+                    html += `<li>${eIcon} Faza 3: Ekstrakcja danych LLM</li>`;
+                }
+                html += '</ul></div>';
+            }
+
+            if (result.ocr_text) {
+                html += `
+                    <div class="mb-2">
+                        <strong>📝 Rozpoznany tekst (OCR):</strong>
+                        <pre class="bg-white p-2 rounded mt-1 small" style="max-height: 200px; overflow-y: auto;">${escapeHtml(result.ocr_text)}</pre>
+                    </div>
+                `;
+            }
+
+            if (result.analysis) {
+                html += `
+                    <div class="mb-2">
+                        <strong>🔍 Analiza Vision AI:</strong>
+                        <ul class="mb-0 small">
+                `;
+
+                if (result.analysis.description) {
+                    html += `<li><pre class="bg-light p-2 rounded mb-0" style="white-space: pre-wrap; max-height: 150px; overflow-y: auto;">${escapeHtml(result.analysis.description)}</pre></li>`;
+                }
+                if (result.analysis.objects && Array.isArray(result.analysis.objects)) {
+                    html += `<li>Obiekty: ${result.analysis.objects.join(', ')}</li>`;
+                }
+                if (result.analysis.tags && Array.isArray(result.analysis.tags)) {
+                    html += `<li>Tagi: ${result.analysis.tags.map(t => `<span class="badge bg-secondary me-1">${t}</span>`).join('')}</li>`;
+                }
+                if (result.analysis.rows) {
+                    html += `<li>Wiersze: ${result.analysis.rows}, Kolumny: ${result.analysis.columns}</li>`;
+                }
+                if (result.analysis.summary) {
+                    html += `<li>${result.analysis.summary}</li>`;
+                }
+
+                html += '</ul></div>';
+            }
+
+            if (result.extracted_data) {
+                html += `
+                    <div class="mb-2">
+                        <strong>📊 Wyekstrahowane dane strukturalne:</strong>
+                        <pre class="bg-white p-2 rounded mt-1 small" style="max-height: 300px; overflow-y: auto;">${escapeHtml(JSON.stringify(result.extracted_data, null, 2))}</pre>
+                    </div>
+                `;
+            }
+
+            if (result.thumbnail_url) {
+                html += `
+                    <div class="mb-2">
+                        <strong>🖼️ Miniaturka:</strong>
+                        <img src="${result.thumbnail_url}" class="d-block mt-1" style="max-width: 100px; border-radius: 4px;">
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function removeFile(fileId) {
+            files.delete(fileId);
+            const item = document.getElementById(`file-${fileId}`);
+            if (item) item.remove();
+            updateBulkActions();
+        }
+
+        function updateBulkActions() {
+            const actions = document.getElementById('bulk-actions');
+            actions.style.display = files.size > 0 ? 'flex' : 'none';
+        }
+
+        // =================================================================
+        // Event Handlers
+        // =================================================================
+        function setupEventHandlers() {
+            const uploadZone = document.getElementById('upload-zone');
+            const fileInput = document.getElementById('file-input');
+
+            // Click to upload
+            uploadZone.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') {
+                    fileInput.click();
+                }
+            });
+
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+                e.target.value = ''; // Reset for same file selection
+            });
+
+            // Drag and drop
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            });
+
+            // Clear all
+            document.getElementById('btn-clear').addEventListener('click', () => {
+                files.clear();
+                document.getElementById('file-list').innerHTML = '';
+                updateBulkActions();
+            });
+
+            // Download all results
+            document.getElementById('btn-download-all').addEventListener('click', () => {
+                const results = [];
+                files.forEach((fileData) => {
+                    if (fileData.result) {
+                        results.push({
+                            filename: fileData.file.name,
+                            ...fileData.result
+                        });
+                    }
+                });
+
+                const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'processing-results.json';
+                a.click();
+            });
+        }
+
+        // =================================================================
+        // Helpers
+        // =================================================================
+        function generateId() {
+            return Math.random().toString(36).substr(2, 9);
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // =================================================================
+        // Start
+        // =================================================================
+        init();
+    </script>
+</body>
+</html>

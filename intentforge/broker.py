@@ -229,10 +229,10 @@ class MQTTIntentBroker:
         if len(pattern_parts) != len(topic_parts) and "#" not in pattern:
             return False
 
-        for t, p in zip(topic_parts, pattern_parts):
+        for t, p in zip(topic_parts, pattern_parts, strict=False):
             if p == "#":
                 return True
-            if p != "+" and p != t:
+            if p not in ("+", t):
                 return False
 
         return True

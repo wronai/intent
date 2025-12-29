@@ -95,8 +95,8 @@ services:
     ports:
       - "${MQTT_PORT_EXTERNAL}:${MQTT_PORT}"      # MQTT
       - "${MQTT_WEBSOCKET_PORT_EXTERNAL}:9001"      # WebSocket
+    command: mosquitto -c /mosquitto-no-auth.conf
     volumes:
-      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
     networks:
@@ -156,9 +156,9 @@ services:
     ports:
       - "${WEB_PORT}:80"
     volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./frontend:/usr/share/nginx/html/frontend:ro
       - ./examples:/usr/share/nginx/html/examples:ro
-      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - intentforge
       - mosquitto

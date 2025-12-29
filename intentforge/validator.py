@@ -224,9 +224,7 @@ class SyntaxValidator(BaseValidator):
                 )
         except Exception as e:
             result.add_error(
-                ValidationError(
-                    level=ValidationLevel.SYNTAX, message=f"HTML parsing error: {str(e)}"
-                )
+                ValidationError(level=ValidationLevel.SYNTAX, message=f"HTML parsing error: {e!s}")
             )
 
     def _validate_json(self, code: str, result: ValidationResult) -> None:
@@ -652,19 +650,25 @@ class CodeValidator:
             ]
 
         # Level 1: Syntax
-        if level in (ValidationLevel.SYNTAX, ValidationLevel.FULL):
-            if self.settings.enable_syntax_check:
-                results.append(self.syntax_validator.validate(code, language))
+        if (
+            level in (ValidationLevel.SYNTAX, ValidationLevel.FULL)
+            and self.settings.enable_syntax_check
+        ):
+            results.append(self.syntax_validator.validate(code, language))
 
         # Level 2: Security
-        if level in (ValidationLevel.SECURITY, ValidationLevel.FULL):
-            if self.settings.enable_security_check:
-                results.append(self.security_validator.validate(code, language))
+        if (
+            level in (ValidationLevel.SECURITY, ValidationLevel.FULL)
+            and self.settings.enable_security_check
+        ):
+            results.append(self.security_validator.validate(code, language))
 
         # Level 3: Semantic
-        if level in (ValidationLevel.SEMANTIC, ValidationLevel.FULL):
-            if self.settings.enable_semantic_check:
-                results.append(self.semantic_validator.validate(code, language))
+        if (
+            level in (ValidationLevel.SEMANTIC, ValidationLevel.FULL)
+            and self.settings.enable_semantic_check
+        ):
+            results.append(self.semantic_validator.validate(code, language))
 
         # Aggregate results
         all_errors = []

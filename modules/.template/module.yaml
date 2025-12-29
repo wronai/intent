@@ -1,0 +1,38 @@
+name: template
+version: 1.0.0
+description: Template module for IntentForge autonomous services
+author: IntentForge
+
+# Module configuration
+config:
+  port: 8080
+  timeout: 30
+  max_retries: 3
+
+# Dependencies
+dependencies:
+  python: ">=3.11"
+  packages:
+    - fastapi
+    - uvicorn
+    - requests
+
+# Endpoints exposed by this module
+endpoints:
+  - path: /health
+    method: GET
+    description: Health check
+  - path: /info
+    method: GET
+    description: Module information
+  - path: /execute
+    method: POST
+    description: Main execution endpoint
+
+# DSL integration
+dsl:
+  service_name: template
+  actions:
+    - name: execute
+      endpoint: /execute
+      method: POST

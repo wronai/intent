@@ -404,7 +404,7 @@ class {table.title().replace("_", "")}(Base):
     @staticmethod
     def _generate_api_endpoint(table: str, fields: list[dict], config: PatternConfig) -> str:
         """Generate FastAPI endpoint"""
-        _ = [f["name"] for f in fields]  # noqa: F841
+        _ = [f["name"] for f in fields]
 
         auth_import = ""
         auth_param = ""

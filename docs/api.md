@@ -1,6 +1,6 @@
 # API Reference
 
-**[🏠 Home](INDEX.md) | [⚙️ Setup](setup.md) | [🛠️ Usage](usage.md) | [🏗️ Architecture](architecture.md) | [📚 API](api.md)**
+**[🏠 Home](INDEX.md) | [⚙️ Setup](setup.md) | [🛠️ Usage](usage.md) | [🏗️ Architecture](architecture.md) | [📚 API](api.md) | [🔧 Services](services.md) | [📝 DSL](dsl.md)**
 
 This section documents the internal Python API for IntentForge.
 

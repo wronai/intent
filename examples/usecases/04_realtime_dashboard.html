@@ -379,8 +379,27 @@
             }
         }
 
-        function updateMetricsDisplay(data) {
-            // Simulate data if not available
+        async function updateMetricsDisplay(data) {
+            // Try to get from API if not provided
+            if (!data) {
+                try {
+                    const response = await fetch('/api/analytics', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'stats', period: 'today' })
+                    });
+                    if (response.ok) {
+                        const apiData = await response.json();
+                        if (apiData.success) {
+                            data = apiData;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Metrics API unavailable');
+                }
+            }
+
+            // Fallback if still no data
             data = data || {
                 users: Math.floor(Math.random() * 500) + 100,
                 users_change: (Math.random() * 20 - 10).toFixed(1),
@@ -451,7 +470,23 @@
             }
         }
 
-        function generateSampleChartData() {
+        async function generateSampleChartData() {
+            // Try to get data from API
+            try {
+                const response = await fetch('/api/analytics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'chart_data', metric: 'traffic', period: '24h' })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) return data;
+                }
+            } catch (e) {
+                console.log('Chart API unavailable');
+            }
+
+            // Fallback - generate locally
             const labels = [];
             const visitors = [];
             const pageviews = [];
@@ -516,7 +551,33 @@
             }
         }
 
-        function generateSampleOrders() {
+        async function generateSampleOrders() {
+            // Try API first
+            try {
+                const response = await fetch('/api/analytics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'activities', limit: 5 })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.activities) {
+                        // Convert activities to order format
+                        return data.activities.filter(a => a.type === 'order').slice(0, 5).map((a, i) => ({
+                            id: `ORD-${1000 + i}`,
+                            customer: `Klient ${Math.floor(Math.random() * 100)}`,
+                            product: 'Produkt',
+                            amount: (Math.random() * 200 + 20).toFixed(2),
+                            status: 'completed',
+                            created_at: new Date()
+                        }));
+                    }
+                }
+            } catch (e) {
+                console.log('Orders API unavailable');
+            }
+
+            // Fallback
             const products = ['E-book Python', 'Kurs React', 'Hosting PRO', 'Domena .pl'];
             const statuses = ['completed', 'pending', 'processing'];
 

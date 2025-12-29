@@ -44,61 +44,61 @@ from .simple import Forge, crud, form, generate, query, save, validate
 from .validator import CodeValidator, ValidationLevel, ValidationResult
 
 __all__ = [
-    # Core
-    "IntentForge",
-    "Intent",
-    "IntentResult",
-    "IntentType",
-    "TargetPlatform",
-    # Broker
-    "MQTTIntentBroker",
+    "BasePlugin",
     # Generator
     "CodeGenerator",
-    "DSLType",
-    "GenerationContext",
     # Validator
     "CodeValidator",
-    "ValidationLevel",
-    "ValidationResult",
+    "DSLType",
     # Executor
     "DynamicExecutor",
-    # Cache
-    "IntentCache",
-    # Config
-    "get_settings",
-    "Settings",
-    # Schema Registry
-    "SchemaRegistry",
-    "get_registry",
-    "SchemaType",
+    "EnvConfig",
     # Environment Handler
     "EnvHandler",
-    "get_env",
-    "configure_env",
-    "EnvConfig",
+    "Forge",
     # Patterns
     "FullstackPatterns",
+    "GenerationContext",
+    "HookEvent",
+    "Intent",
+    # Cache
+    "IntentCache",
+    # Core
+    "IntentForge",
+    "IntentResult",
+    "IntentType",
+    # Broker
+    "MQTTIntentBroker",
+    "MiddlewarePhase",
     "PatternConfig",
     "PatternType",
-    # Simple API (one-liners)
-    "generate",
+    # Schema Registry
+    "SchemaRegistry",
+    "SchemaType",
+    "Settings",
+    "TargetPlatform",
+    "ValidationLevel",
+    "ValidationResult",
+    "audit_log",
+    "cached",
+    "configure_env",
     "crud",
     "form",
-    "query",
-    "validate",
-    "save",
-    "Forge",
+    # Simple API (one-liners)
+    "generate",
+    "get_env",
+    "get_registry",
+    # Config
+    "get_settings",
     # Plugins & Middleware
     "hook",
-    "middleware",
     "hooks",
+    "middleware",
     "plugins",
-    "HookEvent",
-    "MiddlewarePhase",
-    "BasePlugin",
-    "cached",
-    "retry",
+    "query",
     "rate_limit",
+    "retry",
+    "save",
+    "validate",
     "validate_input",
-    "audit_log",
 ]

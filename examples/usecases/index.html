@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntentForge - Use Cases Gallery</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .layout {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            min-width: 320px;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .sidebar-header {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-header h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-header p {
+            margin: 5px 0 0;
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+
+        /* Menu */
+        .menu {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .menu-section {
+            margin-bottom: 20px;
+        }
+        .menu-section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 10px;
+            padding-left: 10px;
+        }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 5px;
+            text-decoration: none;
+            color: rgba(255,255,255,0.85);
+        }
+        .menu-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .menu-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .menu-item-icon {
+            font-size: 1.5rem;
+            margin-right: 12px;
+            width: 40px;
+            text-align: center;
+        }
+        .menu-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .menu-item-title {
+            font-weight: 500;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .menu-item-desc {
+            font-size: 0.75rem;
+            opacity: 0.6;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .menu-item-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 8px;
+        }
+        .menu-item.active .menu-item-badge {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Footer */
+        .sidebar-footer {
+            padding: 15px 20px;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.8rem;
+        }
+        .sidebar-footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .sidebar-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f0f2f5;
+            overflow: hidden;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            gap: 15px;
+        }
+        .toolbar-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toolbar-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .toolbar-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .toolbar-btn:hover {
+            background: #f5f5f5;
+            border-color: #ccc;
+        }
+        .toolbar-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border: none;
+        }
+        .toolbar-btn.primary:hover {
+            opacity: 0.9;
+        }
+
+        /* Device Selector */
+        .device-selector {
+            display: flex;
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 4px;
+        }
+        .device-btn {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        .device-btn:hover {
+            background: rgba(0,0,0,0.05);
+        }
+        .device-btn.active {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Preview Container */
+        .preview-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+        .preview-frame-wrapper {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .preview-frame-wrapper.desktop {
+            width: 100%;
+            height: 100%;
+        }
+        .preview-frame-wrapper.tablet {
+            width: 768px;
+            height: 1024px;
+            max-height: 100%;
+        }
+        .preview-frame-wrapper.mobile {
+            width: 375px;
+            height: 667px;
+            max-height: 100%;
+            border-radius: 30px;
+            border: 8px solid #333;
+        }
+        .preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            text-align: center;
+            padding: 60px 40px;
+            max-width: 600px;
+        }
+        .welcome-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+        .welcome-screen h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .welcome-screen p {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        .welcome-features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 40px;
+            text-align: left;
+        }
+        .welcome-feature {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .welcome-feature-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .welcome-feature h4 {
+            margin: 0 0 5px;
+            font-size: 1rem;
+        }
+        .welcome-feature p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        /* Status indicator */
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .status-dot.online { background: #28a745; }
+        .status-dot.offline { background: #dc3545; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 280px;
+                min-width: 280px;
+            }
+            .welcome-features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>🔧 IntentForge</h1>
+                <p>Use Cases Gallery</p>
+            </div>
+
+            <nav class="menu">
+                <!-- Forms & Data -->
+                <div class="menu-section">
+                    <div class="menu-section-title">📝 Formularze & Dane</div>
+
+                    <div class="menu-item" data-src="01_contact_form.html" data-title="Formularz kontaktowy">
+                        <span class="menu-item-icon">📧</span>
+                        <div class="menu-item-content">
+                            <div class="menu-item-title">Formularz kontaktowy</div>
+                            <div class="menu-item-desc">Auto-wysyłka email, walidacja</div>
+                        </div>
+                    </div>
+
+                    <div class="menu-item" data-src="04_todo_app.html" data-title="Todo App">
+                        <span class="menu-item-icon">✅</span>
+                        <div class="menu-item-content">
+                            <div class="menu-item-title">Todo App</div>
+                            <div class="menu-item-desc">CRUD, filtry, priorytety</div>
+                        </div>
+                    </div>
+
+                    <div class="menu-item" data-src="08_file_upload.html" data-title="Upload plików">
+                        <span class="menu-item-icon">📁</span>
+                        <div class="menu-item-content">
+                            <div class="menu-item-title">Upload & AI Processing</div>
+                            <div class="menu-item-desc">OCR, analiza, ekstrakcja</div>
+                        </div>
+                        <span class="menu-item-badge">AI</span>
+                    </div>
+                </div>
+
+                <!-- E-commerce -->
+                <div class="menu-section">
+                    <div class="menu-section-title">💰 E-commerce</div>
+
+                    <div class="menu-item" data-src="02_ebook_payment.html" data-title="Płatności e-book">
+                        <span class="menu-item-icon">📚</span>
+                        <div class="menu-item-content">
+                            <div class="menu-item-title">Sprzedaż e-booka</div>
+                            <div class="menu-item-desc">PayPal, Stripe, BLIK</div>
+                        </div>
+                    </div>
+
+                    <div class="menu-item" data-src="06_dashboard_analytics.html" data-title="Dashboard Analytics">
+                        <span class="menu-item-icon">📊</span>
+                        <div class="menu-item-content">
+                            <div class="menu-item-title">Dashboard Analytics</div>
+                            <div class="menu-item-desc">Wykresy, KPI, raporty</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI & Chat -->
+                <div class="menu-section">
+                    <div class="menu-section-title">🤖 AI & Chat</div>
+
+                    <div class="menu-item" data-src="05_chat_assistant.html" data-title="AI Chat Assistant">
+                        <span class="menu-item-icon">💬</span>
+                        <div class="menu-item-content">
+                            <div class="menu-item-title">AI Chat Assistant</div>
+                            <div class="menu-item-desc">Ollama, kod, rozmowa</div>
+                        </div>
+                        <span class="menu-item-badge">AI</span>
+                    </div>
+                </div>
+
+                <!-- IoT -->
+                <div class="menu-section">
+                    <div class="menu-section-title">🏠 IoT & Monitoring</div>
+
+                    <div class="menu-item" data-src="03_camera_monitoring.html" data-title="Monitoring kamery">
+                        <span class="menu-item-icon">🎥</span>
+                        <div class="menu-item-content">
+                            <div class="menu-item-title">AI Camera Monitor</div>
+                            <div class="menu-item-desc">Detekcja ruchu, alerty</div>
+                        </div>
+                        <span class="menu-item-badge">AI</span>
+                    </div>
+
+                    <div class="menu-item" data-src="07_iot_smart_home.html" data-title="Smart Home">
+                        <span class="menu-item-icon">🏠</span>
+                        <div class="menu-item-content">
+                            <div class="menu-item-title">Smart Home</div>
+                            <div class="menu-item-desc">Urządzenia, sceny, MQTT</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code Generation -->
+                <div class="menu-section">
+                    <div class="menu-section-title">⚡ Generowanie kodu</div>
+
+                    <div class="menu-item" data-src="../example2_static_html.html" data-title="Code Generator">
+                        <span class="menu-item-icon">🔧</span>
+                        <div class="menu-item-content">
+                            <div class="menu-item-title">Code Generator</div>
+                            <div class="menu-item-desc">REST API, SQL, firmware</div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="mb-2">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span id="status-text">Sprawdzanie...</span>
+                </div>
+                <div>
+                    <a href="https://github.com/wronai/intent" target="_blank">GitHub</a> •
+                    <a href="../README.md" target="_blank">Dokumentacja</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-title">
+                    <span id="current-icon">🏠</span>
+                    <span id="current-title">Wybierz przykład</span>
+                </div>
+
+                <div class="toolbar-actions">
+                    <div class="device-selector">
+                        <button class="device-btn active" data-device="desktop" title="Desktop">🖥️</button>
+                        <button class="device-btn" data-device="tablet" title="Tablet">📱</button>
+                        <button class="device-btn" data-device="mobile" title="Mobile">📲</button>
+                    </div>
+
+                    <button class="toolbar-btn" id="btn-refresh" title="Odśwież">
+                        🔄 Odśwież
+                    </button>
+
+                    <button class="toolbar-btn" id="btn-new-tab" title="Otwórz w nowej karcie">
+                        ↗️ Nowa karta
+                    </button>
+
+                    <button class="toolbar-btn primary" id="btn-view-code" title="Zobacz kod">
+                        👁️ Kod źródłowy
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="preview-container">
+                <div class="preview-frame-wrapper desktop" id="frame-wrapper">
+                    <!-- Welcome Screen -->
+                    <div class="welcome-screen" id="welcome-screen">
+                        <div class="welcome-icon">🔧</div>
+                        <h2>IntentForge Use Cases</h2>
+                        <p>
+                            Wybierz przykład z menu po lewej stronie, aby zobaczyć jak działa IntentForge
+                            w różnych scenariuszach - od prostych formularzy po zaawansowane aplikacje IoT.
+                        </p>
+
+                        <div class="welcome-features">
+                            <div class="welcome-feature">
+                                <div class="welcome-feature-icon">📝</div>
+                                <h4>Formularze</h4>
+                                <p>Auto-binding, walidacja, wysyłka</p>
+                            </div>
+                            <div class="welcome-feature">
+                                <div class="welcome-feature-icon">🤖</div>
+                                <h4>AI Processing</h4>
+                                <p>Ollama, OCR, analiza obrazu</p>
+                            </div>
+                            <div class="welcome-feature">
+                                <div class="welcome-feature-icon">📡</div>
+                                <h4>Real-time</h4>
+                                <p>MQTT, WebSocket, eventy</p>
+                            </div>
+                            <div class="welcome-feature">
+                                <div class="welcome-feature-icon">🏠</div>
+                                <h4>IoT</h4>
+                                <p>Smart home, sensory, kamery</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Iframe (hidden initially) -->
+                    <iframe id="preview-iframe" class="preview-iframe" style="display: none;"></iframe>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // =================================================================
+        // State
+        // =================================================================
+        let currentSrc = null;
+        let currentDevice = 'desktop';
+
+        // =================================================================
+        // Initialize
+        // =================================================================
+        function init() {
+            setupMenuHandlers();
+            setupToolbarHandlers();
+            checkServerStatus();
+
+            // Check URL hash for direct link
+            if (window.location.hash) {
+                const src = window.location.hash.slice(1);
+                const menuItem = document.querySelector(`[data-src="${src}"]`);
+                if (menuItem) {
+                    loadExample(menuItem);
+                }
+            }
+        }
+
+        // =================================================================
+        // Menu Handlers
+        // =================================================================
+        function setupMenuHandlers() {
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('click', () => loadExample(item));
+            });
+        }
+
+        function loadExample(menuItem) {
+            const src = menuItem.dataset.src;
+            const title = menuItem.dataset.title;
+            const icon = menuItem.querySelector('.menu-item-icon').textContent;
+
+            // Update active state
+            document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+            menuItem.classList.add('active');
+
+            // Update toolbar
+            document.getElementById('current-icon').textContent = icon;
+            document.getElementById('current-title').textContent = title;
+
+            // Update URL hash
+            window.location.hash = src;
+
+            // Load iframe
+            currentSrc = src;
+            const iframe = document.getElementById('preview-iframe');
+            const welcome = document.getElementById('welcome-screen');
+
+            welcome.style.display = 'none';
+            iframe.style.display = 'block';
+            iframe.src = src;
+        }
+
+        // =================================================================
+        // Toolbar Handlers
+        // =================================================================
+        function setupToolbarHandlers() {
+            // Device selector
+            document.querySelectorAll('.device-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.device-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    currentDevice = btn.dataset.device;
+                    const wrapper = document.getElementById('frame-wrapper');
+                    wrapper.className = `preview-frame-wrapper ${currentDevice}`;
+                });
+            });
+
+            // Refresh
+            document.getElementById('btn-refresh').addEventListener('click', () => {
+                const iframe = document.getElementById('preview-iframe');
+                if (iframe.src) {
+                    iframe.src = iframe.src;
+                }
+            });
+
+            // New tab
+            document.getElementById('btn-new-tab').addEventListener('click', () => {
+                if (currentSrc) {
+                    window.open(currentSrc, '_blank');
+                }
+            });
+
+            // View code
+            document.getElementById('btn-view-code').addEventListener('click', () => {
+                if (currentSrc) {
+                    // Try to open source in GitHub or show raw
+                    window.open(`view-source:${window.location.origin}/examples/usecases/${currentSrc}`, '_blank');
+                }
+            });
+        }
+
+        // =================================================================
+        // Server Status
+        // =================================================================
+        async function checkServerStatus() {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+
+            try {
+                const response = await fetch('/health', { timeout: 3000 });
+                if (response.ok) {
+                    dot.className = 'status-dot online';
+                    text.textContent = 'Serwer online';
+                } else {
+                    throw new Error('Not OK');
+                }
+            } catch (error) {
+                dot.className = 'status-dot offline';
+                text.textContent = 'Demo mode';
+            }
+        }
+
+        // =================================================================
+        // Start
+        // =================================================================
+        init();
+    </script>
+</body>
+</html>

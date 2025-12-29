@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import inspect
 import json
 import logging
@@ -20,7 +21,7 @@ def _filter_kwargs(fn, data: dict[str, Any]) -> dict[str, Any]:
     sig = inspect.signature(fn)
     if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
         return data
-    allowed = {name for name in sig.parameters.keys()}
+    allowed = set(sig.parameters.keys())
     return {k: v for k, v in data.items() if k in allowed}
 
 
@@ -176,10 +177,8 @@ async def _run() -> None:
         stop_event.set()
 
     for sig in (signal.SIGINT, signal.SIGTERM):
-        try:
+        with contextlib.suppress(NotImplementedError):
             loop.add_signal_handler(sig, _stop)
-        except NotImplementedError:
-            pass
 
     mqtt_client = mqtt.Client(
         client_id=os.getenv("INTENTFORGE_WORKER_ID", "intentforge-worker"),

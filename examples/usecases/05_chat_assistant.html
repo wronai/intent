@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Assistant - IntentForge Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #1a1a2e; color: #eee; height: 100vh; margin: 0; overflow: hidden; }
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+        .chat-container {
+            flex: 1;
+            max-width: 800px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        /* Sandbox Panel */
+        .sandbox-panel {
+            width: 400px;
+            background: #0d0d1a;
+            border-left: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+        }
+        .sandbox-panel.collapsed {
+            width: 40px;
+        }
+        .sandbox-panel.collapsed .sandbox-content { display: none; }
+        .sandbox-header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sandbox-header h5 { margin: 0; font-size: 0.95rem; }
+        .sandbox-toggle {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        .sandbox-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .sandbox-logs {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+        }
+        .sandbox-log {
+            padding: 4px 8px;
+            margin: 2px 0;
+            border-radius: 4px;
+            animation: fadeIn 0.2s ease;
+        }
+        .sandbox-log.status { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .sandbox-log.log { background: rgba(100, 100, 100, 0.1); color: #aaa; }
+        .sandbox-log.error { background: rgba(248, 113, 113, 0.2); color: #f87171; }
+        .sandbox-log.result { background: rgba(102, 126, 234, 0.2); color: #667eea; }
+        .sandbox-status {
+            padding: 10px;
+            background: #1a1a2e;
+            border-top: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sandbox-status .indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #666;
+        }
+        .sandbox-status .indicator.running {
+            background: #10b981;
+            animation: pulse 1s infinite;
+        }
+        .sandbox-status .indicator.success { background: #10b981; }
+        .sandbox-status .indicator.error { background: #f87171; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .sandbox-result {
+            padding: 10px;
+            background: #1a1a2e;
+            border-top: 1px solid #333;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .sandbox-result .endpoint-test {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            font-size: 0.8rem;
+        }
+        .sandbox-result .endpoint-test.pass { color: #10b981; }
+        .sandbox-result .endpoint-test.fail { color: #f87171; }
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 0 0 20px 20px;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .message {
+            max-width: 80%;
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message-user {
+            margin-left: auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px 20px 5px 20px;
+            padding: 12px 18px;
+        }
+        .message-assistant {
+            background: #2d2d44;
+            border-radius: 20px 20px 20px 5px;
+            padding: 12px 18px;
+        }
+        .message-system {
+            text-align: center;
+            color: #888;
+            font-size: 0.85rem;
+        }
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 15px;
+        }
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        .streaming-cursor {
+            animation: blink 1s infinite;
+            color: #667eea;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        .chat-input {
+            background: #2d2d44;
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+        }
+        .chat-input textarea {
+            background: #1a1a2e;
+            border: 1px solid #444;
+            color: #eee;
+            resize: none;
+        }
+        .chat-input textarea:focus {
+            background: #1a1a2e;
+            border-color: #667eea;
+            color: #eee;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .quick-action {
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid #667eea;
+            color: #667eea;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quick-action:hover {
+            background: #667eea;
+            color: white;
+        }
+        .code-block {
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 0;
+            margin: 10px 0;
+            overflow: hidden;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+        }
+        .code-block .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(102, 126, 234, 0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .code-block .code-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .code-block .code-actions .btn {
+            padding: 2px 8px;
+            font-size: 0.75rem;
+        }
+        .code-block pre {
+            margin: 0;
+            padding: 12px;
+            overflow-x: auto;
+        }
+        .code-block .code-output {
+            background: #0d0d1a;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .code-output .output-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #667eea;
+        }
+        .code-output .output-content {
+            background: transparent;
+            color: #4ade80;
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        .code-output .output-error {
+            background: transparent;
+            color: #f87171;
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #667eea;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast-notification.error {
+            background: #ef4444;
+        }
+        .model-selector {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #eee;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-0">🤖 AI Assistant</h4>
+                    <small class="opacity-75">Powered by IntentForge + Ollama</small>
+                </div>
+                <div>
+                    <select id="model-select" class="model-selector">
+                        <option value="llama3.1:8b">Llama 3.1 8B</option>
+                        <option value="codellama">CodeLlama</option>
+                        <option value="mistral">Mistral</option>
+                    </select>
+                    <span id="status" class="badge bg-secondary ms-2">Łączenie...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" id="messages">
+            <div class="message message-system">
+                Rozpocznij rozmowę z AI. Możesz pytać o kod, prosić o wyjaśnienia lub generować rozwiązania.
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input">
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <span class="quick-action" data-prompt="Napisz funkcję w Python do">💻 Kod Python</span>
+                <span class="quick-action" data-prompt="Wyjaśnij jak działa">📚 Wyjaśnij</span>
+                <span class="quick-action" data-prompt="Stwórz REST API dla">🔌 REST API</span>
+                <span class="quick-action" data-prompt="Znajdź błąd w kodzie:">🐛 Debug</span>
+                <span class="quick-action" data-prompt="Zoptymalizuj ten kod:">⚡ Optymalizuj</span>
+            </div>
+
+            <form id="chat-form">
+                <div class="input-group">
+                    <textarea id="user-input" class="form-control" rows="2"
+                              placeholder="Napisz wiadomość... (Shift+Enter dla nowej linii)"></textarea>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <span id="send-icon">➤</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sandbox Panel -->
+    <div class="sandbox-panel" id="sandbox-panel">
+        <div class="sandbox-header">
+            <h5>🧪 Sandbox</h5>
+            <button class="sandbox-toggle" onclick="toggleSandbox()">◀</button>
+        </div>
+        <div class="sandbox-content">
+            <div class="sandbox-logs" id="sandbox-logs">
+                <div class="sandbox-log status">Gotowy do uruchomienia kodu...</div>
+            </div>
+            <div class="sandbox-result" id="sandbox-result" style="display: none;">
+                <!-- Endpoint test results will appear here -->
+            </div>
+            <div class="sandbox-status">
+                <div class="indicator" id="sandbox-indicator"></div>
+                <span id="sandbox-status-text">Idle</span>
+                <button class="btn btn-sm btn-outline-danger ms-auto" id="sandbox-stop" style="display: none;" onclick="stopSandbox()">⏹ Stop</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- IntentForge SDK -->
+    <script src="/sdk/intentforge.js" data-broker="ws://localhost:9001"></script>
+
+    <script>
+        // =================================================================
+        // State
+        // =================================================================
+        let api;
+        let conversationHistory = [];
+        let isProcessing = false;
+        let availableModels = [];
+
+        // Sandbox state
+        let sandboxWs = null;
+        let sandboxSessionId = null;
+        let autoRunEnabled = true;
+
+        // =================================================================
+        // Sandbox Functions
+        // =================================================================
+        function toggleSandbox() {
+            const panel = document.getElementById('sandbox-panel');
+            const toggle = panel.querySelector('.sandbox-toggle');
+            panel.classList.toggle('collapsed');
+            toggle.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
+        }
+
+        function addSandboxLog(message, type = 'log') {
+            const logsDiv = document.getElementById('sandbox-logs');
+            const logEl = document.createElement('div');
+            logEl.className = `sandbox-log ${type}`;
+            logEl.textContent = typeof message === 'object' ? JSON.stringify(message) : message;
+            logsDiv.appendChild(logEl);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function clearSandboxLogs() {
+            document.getElementById('sandbox-logs').innerHTML = '';
+            document.getElementById('sandbox-result').style.display = 'none';
+            document.getElementById('sandbox-result').innerHTML = '';
+        }
+
+        function setSandboxStatus(status, text) {
+            const indicator = document.getElementById('sandbox-indicator');
+            const statusText = document.getElementById('sandbox-status-text');
+            const stopBtn = document.getElementById('sandbox-stop');
+
+            indicator.className = 'indicator ' + status;
+            statusText.textContent = text;
+            stopBtn.style.display = status === 'running' ? 'block' : 'none';
+        }
+
+        function showSandboxResult(result) {
+            const resultDiv = document.getElementById('sandbox-result');
+            resultDiv.style.display = 'block';
+
+            if (result.test_results && result.test_results.length > 0) {
+                let html = `<div class="small text-muted mb-2">📊 ${result.endpoints_passed}/${result.endpoints_tested} endpoints</div>`;
+                result.test_results.forEach(t => {
+                    const cls = t.success ? 'pass' : 'fail';
+                    const icon = t.success ? '✅' : '❌';
+                    html += `<div class="endpoint-test ${cls}">${icon} ${t.method} ${t.path} → ${t.status_code}</div>`;
+                });
+                resultDiv.innerHTML = html;
+            } else if (result.output) {
+                resultDiv.innerHTML = `<pre class="small text-success m-0">${escapeHtml(result.output)}</pre>`;
+            } else if (result.error) {
+                resultDiv.innerHTML = `<pre class="small text-danger m-0">${escapeHtml(result.error)}</pre>`;
+            }
+        }
+
+        async function runInSandbox(code) {
+            // Clear previous logs
+            clearSandboxLogs();
+            setSandboxStatus('running', 'Starting...');
+            addSandboxLog('🚀 Starting sandbox execution...', 'status');
+
+            // Ensure sandbox panel is visible
+            const panel = document.getElementById('sandbox-panel');
+            if (panel.classList.contains('collapsed')) {
+                toggleSandbox();
+            }
+
+            try {
+                // Start sandbox and get session ID
+                const response = await fetch('/api/sandbox/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, auto_fix: true })
+                });
+
+                const data = await response.json();
+                if (!data.success) {
+                    addSandboxLog(`❌ ${data.error}`, 'error');
+                    setSandboxStatus('error', 'Failed');
+                    return;
+                }
+
+                sandboxSessionId = data.session_id;
+                addSandboxLog(`📡 Session: ${sandboxSessionId}`, 'log');
+
+                // Connect to WebSocket for streaming logs
+                connectSandboxWs(sandboxSessionId);
+
+            } catch (error) {
+                addSandboxLog(`❌ Error: ${error.message}`, 'error');
+                setSandboxStatus('error', 'Error');
+            }
+        }
+
+        function connectSandboxWs(sessionId) {
+            const wsUrl = `ws://${window.location.host}/ws/sandbox/${sessionId}`;
+            sandboxWs = new WebSocket(wsUrl);
+
+            sandboxWs.onopen = () => {
+                addSandboxLog('📡 Connected to sandbox stream', 'status');
+            };
+
+            sandboxWs.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+
+                    if (msg.type === 'log') {
+                        addSandboxLog(msg.data, 'log');
+                    } else if (msg.type === 'status') {
+                        addSandboxLog(msg.data, 'status');
+                        setSandboxStatus('running', msg.data.substring(0, 30));
+                    } else if (msg.type === 'result') {
+                        const result = msg.data;
+                        if (result.success) {
+                            setSandboxStatus('success', 'Success');
+                            addSandboxLog('✅ Execution completed successfully!', 'status');
+                        } else {
+                            setSandboxStatus('error', 'Failed');
+                            addSandboxLog('❌ Execution failed', 'error');
+                        }
+                        showSandboxResult(result);
+                    } else if (msg.type === 'error') {
+                        addSandboxLog(`❌ ${msg.data}`, 'error');
+                        setSandboxStatus('error', 'Error');
+                    }
+                } catch (e) {
+                    console.error('WebSocket parse error:', e);
+                }
+            };
+
+            sandboxWs.onerror = (error) => {
+                addSandboxLog('⚠️ WebSocket error', 'error');
+            };
+
+            sandboxWs.onclose = () => {
+                addSandboxLog('📡 Stream closed', 'log');
+            };
+        }
+
+        function stopSandbox() {
+            if (sandboxWs) {
+                sandboxWs.send(JSON.stringify({ action: 'stop' }));
+                sandboxWs.close();
+                sandboxWs = null;
+            }
+            setSandboxStatus('', 'Stopped');
+            addSandboxLog('🛑 Stopped by user', 'status');
+        }
+
+        // Auto-run code after generation
+        function autoRunCodeBlock(blockId) {
+            if (!autoRunEnabled) return;
+
+            const block = document.getElementById(blockId);
+            if (!block) return;
+
+            const code = decodeURIComponent(escape(atob(block.dataset.code)));
+            const language = block.dataset.language.toLowerCase();
+
+            // Only auto-run Python and services
+            if (['python', 'javascript'].includes(language)) {
+                setTimeout(() => runInSandbox(code), 500);
+            }
+        }
+
+        // =================================================================
+        // Initialize
+        // =================================================================
+        async function init() {
+            try {
+                api = await IntentForge.connect('ws://localhost:9001', { debug: true });
+                document.getElementById('status').className = 'badge bg-success ms-2';
+                document.getElementById('status').textContent = '🟢 Połączony';
+
+                // Load available models from backend
+                await loadModels();
+            } catch (error) {
+                console.log('SDK connection failed, using REST API directly');
+                document.getElementById('status').className = 'badge bg-warning ms-2';
+                document.getElementById('status').textContent = '🟡 REST';
+
+                // Still try to load models
+                await loadModels();
+            }
+
+            setupEventHandlers();
+        }
+
+        // =================================================================
+        // Load Models from Backend
+        // =================================================================
+        async function loadModels() {
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'models' })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.models && data.models.length > 0) {
+                        availableModels = data.models;
+                        updateModelSelector(data.models, data.provider, data.default_model);
+                    }
+                }
+            } catch (error) {
+                console.log('Could not load models:', error);
+            }
+        }
+
+        function updateModelSelector(models, provider, defaultModel) {
+            const select = document.getElementById('model-select');
+            select.innerHTML = '';
+
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                // Select the default model from .env
+                if (defaultModel && model === defaultModel) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+
+            // If default model wasn't found in list, add it at the top
+            if (defaultModel && !models.includes(defaultModel)) {
+                const option = document.createElement('option');
+                option.value = defaultModel;
+                option.textContent = `${defaultModel} (default)`;
+                option.selected = true;
+                select.insertBefore(option, select.firstChild);
+            }
+
+            // Update header to show provider
+            const subtitle = document.querySelector('.chat-header small');
+            if (subtitle && provider) {
+                subtitle.textContent = `Powered by IntentForge + ${provider.charAt(0).toUpperCase() + provider.slice(1)}`;
+            }
+        }
+
+        // =================================================================
+        // Chat Functions
+        // =================================================================
+        let useStreaming = true; // Enable streaming by default
+
+        async function sendMessage(userMessage) {
+            if (isProcessing || !userMessage.trim()) return;
+
+            isProcessing = true;
+            const model = document.getElementById('model-select').value;
+
+            // Add user message to UI
+            addMessage('user', userMessage);
+            conversationHistory.push({ role: 'user', content: userMessage });
+
+            // Update status to show processing
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = '⏳ Generowanie...';
+            statusEl.className = 'badge bg-info ms-2';
+
+            const systemPrompt = "Jesteś pomocnym, proaktywnym asystentem AI programisty. " +
+                "Odpowiadaj po polsku. Gdy użytkownik prosi o kod, od razu generuj kompletny, działający kod. " +
+                "Używaj bloków kodu z odpowiednim językiem (```python, ```javascript, etc.). " +
+                "Bądź konkretny i pomocny. Jeśli pytanie jest niejasne, zaproponuj najlepsze rozwiązanie.";
+
+            if (useStreaming) {
+                await sendMessageStreaming(userMessage, model, systemPrompt, statusEl);
+            } else {
+                await sendMessageNonStreaming(userMessage, model, systemPrompt, statusEl);
+            }
+
+            isProcessing = false;
+        }
+
+        async function sendMessageStreaming(userMessage, model, systemPrompt, statusEl) {
+            // Create message div for streaming response
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message message-assistant';
+            messageDiv.innerHTML = '<span class="streaming-cursor">▌</span>';
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            let fullResponse = '';
+
+            try {
+                const response = await fetch('/api/chat/stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: userMessage,
+                        model: model,
+                        system: systemPrompt
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const text = decoder.decode(value);
+                    const lines = text.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.chunk) {
+                                    fullResponse += data.chunk;
+                                    messageDiv.innerHTML = formatMessage(fullResponse) + '<span class="streaming-cursor">▌</span>';
+                                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                                }
+                                if (data.done) {
+                                    messageDiv.innerHTML = formatMessage(fullResponse);
+                                }
+                                if (data.error) {
+                                    throw new Error(data.error);
+                                }
+                            } catch (e) {
+                                if (e.message !== 'Unexpected end of JSON input') {
+                                    console.error('Parse error:', e);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Final update - enable auto-run for code blocks
+                pendingAutoRun = []; // Clear before parsing
+                messageDiv.innerHTML = formatMessage(fullResponse, true);
+                conversationHistory.push({ role: 'assistant', content: fullResponse });
+
+                statusEl.textContent = '🟢 Streaming';
+                statusEl.className = 'badge bg-success ms-2';
+                console.log(`✅ Streaming complete, ${fullResponse.length} chars`);
+
+                // Auto-run the first executable code block in sandbox
+                if (pendingAutoRun.length > 0 && autoRunEnabled) {
+                    const first = pendingAutoRun[0];
+                    console.log(`🧪 Auto-running ${first.language} code in sandbox...`);
+                    setTimeout(() => runInSandbox(first.code), 500);
+                }
+
+            } catch (error) {
+                console.error('Streaming error:', error);
+
+                // Fallback to non-streaming
+                if (fullResponse.length === 0) {
+                    messageDiv.remove();
+                    useStreaming = false;
+                    statusEl.textContent = '🟡 Fallback...';
+                    await sendMessageNonStreaming(userMessage, model, systemPrompt, statusEl);
+                    return;
+                }
+
+                messageDiv.innerHTML = formatMessage(fullResponse + '\n\n⚠️ Streaming przerwane');
+                statusEl.textContent = '🟡 REST';
+                statusEl.className = 'badge bg-warning ms-2';
+            }
+        }
+
+        async function sendMessageNonStreaming(userMessage, model, systemPrompt, statusEl) {
+            const typingId = showTyping();
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'send',
+                        message: userMessage,
+                        model: model,
+                        history: conversationHistory.slice(-10),
+                        system: systemPrompt
+                    }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                removeTyping(typingId);
+
+                statusEl.textContent = '🟢 REST';
+                statusEl.className = 'badge bg-success ms-2';
+
+                if (data.success) {
+                    const assistantMessage = data.response || 'Przepraszam, nie otrzymałem odpowiedzi.';
+                    addMessage('assistant', assistantMessage);
+                    conversationHistory.push({ role: 'assistant', content: assistantMessage });
+
+                    if (data.total_tokens) {
+                        console.log(`✅ Tokens: ${data.total_tokens}, Latency: ${data.latency_ms?.toFixed(0)}ms`);
+                    }
+                } else {
+                    const errorMsg = data.error || 'Wystąpił błąd podczas przetwarzania.';
+                    addMessage('assistant', `⚠️ ${errorMsg}`);
+                    statusEl.textContent = '🔴 Błąd';
+                    statusEl.className = 'badge bg-danger ms-2';
+                }
+
+            } catch (error) {
+                removeTyping(typingId);
+                console.error('Chat error:', error);
+
+                statusEl.textContent = '🔴 Błąd';
+                statusEl.className = 'badge bg-danger ms-2';
+
+                let errorMessage;
+                if (error.name === 'AbortError') {
+                    errorMessage = `⏱️ Przekroczono limit czasu (2 min).`;
+                } else {
+                    errorMessage = `⚠️ Błąd: ${error.message}`;
+                }
+
+                addMessage('assistant', errorMessage);
+
+                setTimeout(() => {
+                    statusEl.textContent = '🟡 REST';
+                    statusEl.className = 'badge bg-warning ms-2';
+                }, 3000);
+            }
+        }
+
+        // =================================================================
+        // UI Functions
+        // =================================================================
+        function addMessage(role, content) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${role}`;
+
+            // Parse markdown-like code blocks
+            const formattedContent = formatMessage(content);
+            messageDiv.innerHTML = formattedContent;
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        let codeBlockCounter = 0;
+
+        // Track generated code blocks for auto-run
+        let pendingAutoRun = [];
+
+        function formatMessage(content, autoRun = false) {
+            // Convert code blocks with action buttons
+            content = content.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+                const blockId = `code-block-${++codeBlockCounter}`;
+                const language = lang || 'code';
+                const escapedCode = escapeHtml(code.trim());
+                const canExecute = ['python', 'javascript', 'bash', 'shell', 'ruby', 'php', 'go'].includes(language.toLowerCase());
+
+                // Queue for auto-run if enabled
+                if (autoRun && canExecute && autoRunEnabled) {
+                    pendingAutoRun.push({ blockId, code: code.trim(), language });
+                }
+
+                return `
+                    <div class="code-block" id="${blockId}" data-language="${language}" data-code="${btoa(unescape(encodeURIComponent(code.trim())))}">
+                        <div class="code-header">
+                            <small class="text-muted">${language}</small>
+                            <div class="code-actions">
+                                <button class="btn btn-sm btn-outline-light" onclick="copyCode('${blockId}')" title="Kopiuj">📋</button>
+                                <button class="btn btn-sm btn-outline-light" onclick="saveCode('${blockId}')" title="Zapisz">💾</button>
+                                ${canExecute ? `<button class="btn btn-sm btn-outline-warning" onclick="runInSandbox(decodeURIComponent(escape(atob(document.getElementById('${blockId}').dataset.code))))" title="Sandbox">🧪</button>` : ''}
+                                ${canExecute ? `<button class="btn btn-sm btn-outline-success" onclick="runCode('${blockId}')" title="Uruchom">▶️</button>` : ''}
+                            </div>
+                        </div>
+                        <pre><code>${escapedCode}</code></pre>
+                        <div class="code-output" id="${blockId}-output" style="display: none;"></div>
+                    </div>`;
+            });
+
+            // Convert inline code
+            content = content.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Convert newlines to <br>
+            content = content.replace(/\n/g, '<br>');
+
+            return content;
+        }
+
+        function copyCode(blockId) {
+            const block = document.getElementById(blockId);
+            const code = decodeURIComponent(escape(atob(block.dataset.code)));
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('Kod skopiowany do schowka!');
+            });
+        }
+
+        async function saveCode(blockId) {
+            const block = document.getElementById(blockId);
+            const code = decodeURIComponent(escape(atob(block.dataset.code)));
+            const language = block.dataset.language.toLowerCase();
+
+            try {
+                const response = await fetch('/api/code/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, language })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showToast(`✅ Zapisano: ${data.filename}`);
+                } else {
+                    showToast(`❌ Błąd: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showToast(`❌ Błąd: ${error.message}`, 'error');
+            }
+        }
+
+        // Detect if code is a web service (Flask, FastAPI, etc.)
+        function isWebService(code) {
+            const patterns = [
+                /from flask import|import flask/i,
+                /from fastapi import|import fastapi/i,
+                /@app\.(route|get|post|put|delete)/i,
+                /app\.run\(/i,
+                /uvicorn\.run\(/i
+            ];
+            return patterns.some(p => p.test(code));
+        }
+
+        async function runCode(blockId, useAutofix = true, useConversation = false, useService = null) {
+            const block = document.getElementById(blockId);
+            const code = decodeURIComponent(escape(atob(block.dataset.code)));
+            const language = block.dataset.language.toLowerCase();
+            const outputDiv = document.getElementById(`${blockId}-output`);
+
+            // Auto-detect if this is a web service
+            const isService = useService !== null ? useService : isWebService(code);
+
+            outputDiv.style.display = 'block';
+            let mode = 'bez naprawy';
+            if (isService) mode = 'test usługi Docker';
+            else if (useConversation) mode = 'auto-konwersacja';
+            else if (useAutofix) mode = 'auto-naprawa';
+
+            outputDiv.innerHTML = `<div class="text-info">⏳ Uruchamianie (${mode})...</div>`;
+
+            try {
+                // Choose endpoint based on mode
+                let endpoint = '/api/code/execute';
+                let body = { code, language, timeout: 30 };
+
+                if (isService) {
+                    // Use service tester for Flask/FastAPI/etc.
+                    endpoint = '/api/code/run-service';
+                    body = { code, auto_fix: useAutofix, max_attempts: 3 };
+                } else if (useConversation) {
+                    endpoint = '/api/code/auto-conversation';
+                    body = { code, intent: 'Execute this code', auto_branch: true };
+                } else if (useAutofix) {
+                    endpoint = '/api/code/autofix';
+                    body = { code, language, timeout: 30, max_retries: 3, auto_install: true };
+                }
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                // Build output HTML
+                let outputHtml = '';
+
+                // Show execution logs first (always visible)
+                if (data.logs && data.logs.length > 0) {
+                    outputHtml += `<div class="output-header text-info mb-1">📋 Execution Log:</div>`;
+                    outputHtml += '<div class="execution-logs small mb-2" style="background: #1a1a2e; padding: 8px; border-radius: 4px; font-family: monospace;">';
+                    data.logs.forEach(log => {
+                        outputHtml += `<div>${escapeHtml(log)}</div>`;
+                    });
+                    outputHtml += '</div>';
+                }
+
+                // Show fixes applied (if any)
+                if (data.fixes && data.fixes.length > 0) {
+                    outputHtml += `<div class="output-header text-warning">🔧 Auto-naprawy (${data.attempts} prób):</div>`;
+                    outputHtml += '<ul class="small mb-2">';
+                    data.fixes.forEach(fix => {
+                        outputHtml += `<li><strong>${fix.type}</strong>: ${escapeHtml(fix.description)}</li>`;
+                    });
+                    outputHtml += '</ul>';
+                }
+
+                if (data.success) {
+                    // Show service test results if available
+                    if (data.service_type && data.test_results) {
+                        outputHtml += `
+                            <div class="output-header text-success">✅ Usługa ${data.service_type.toUpperCase()} przetestowana!</div>
+                            <div class="small mb-2">📊 Endpointy: ${data.endpoints_passed}/${data.endpoints_tested} passed</div>
+                        `;
+                        if (data.test_results.length > 0) {
+                            outputHtml += '<div class="small" style="background: #1a2e1a; padding: 8px; border-radius: 4px;">';
+                            data.test_results.forEach(t => {
+                                const icon = t.success ? '✅' : '❌';
+                                outputHtml += `<div>${icon} ${t.method} ${t.path} → ${t.status_code} (${t.response_time_ms?.toFixed(0) || 0}ms)</div>`;
+                            });
+                            outputHtml += '</div>';
+                        }
+                    } else if (data.output) {
+                        outputHtml += `
+                            <div class="output-header text-success">✅ Output:</div>
+                            <pre class="output-content">${escapeHtml(data.output)}</pre>
+                        `;
+                    } else {
+                        outputHtml += `<div class="text-success">✅ Wykonano pomyślnie (brak output)</div>`;
+                    }
+
+                    // Show if code was modified
+                    if (data.final_code && data.final_code !== code) {
+                        outputHtml += `
+                            <details class="mt-2">
+                                <summary class="text-info small">📝 Kod został zmodyfikowany</summary>
+                                <pre class="small bg-light p-2 mt-1" style="max-height: 200px; overflow-y: auto;">${escapeHtml(data.final_code)}</pre>
+                            </details>
+                        `;
+                    }
+                    // Show conversation tree if available
+                    if (data.conversation_tree) {
+                        outputHtml += `
+                            <details class="mt-2">
+                                <summary class="text-primary small">🌳 Drzewo konwersacji (${data.threads || 1} wątków)</summary>
+                                <pre class="small bg-dark text-light p-2 mt-1" style="max-height: 150px; overflow-y: auto;">${escapeHtml(JSON.stringify(data.conversation_tree, null, 2))}</pre>
+                            </details>
+                        `;
+                    }
+                } else {
+                    // Still failed after retries
+                    outputHtml += `
+                        <div class="output-header text-danger">❌ Błąd (po ${data.attempts || data.threads || 1} próbach):</div>
+                        <pre class="output-error">${escapeHtml(data.error || data.stderr || 'Nieznany błąd')}</pre>
+                    `;
+
+                    // Offer retry options
+                    outputHtml += `<div class="mt-2">`;
+                    if (useAutofix && !useConversation) {
+                        outputHtml += `
+                            <button class="btn btn-sm btn-outline-primary me-2" onclick="runCode('${blockId}', true, true)">
+                                🌳 Auto-konwersacja
+                            </button>
+                        `;
+                    }
+                    if (useAutofix) {
+                        outputHtml += `
+                            <button class="btn btn-sm btn-outline-secondary" onclick="runCode('${blockId}', false)">
+                                🔄 Bez auto-naprawy
+                            </button>
+                        `;
+                    }
+                    outputHtml += `</div>`;
+                }
+
+                if (data.execution_time_ms) {
+                    outputHtml += `<div class="text-muted small mt-1">⏱️ ${data.execution_time_ms.toFixed(0)}ms</div>`;
+                }
+
+                // Show thread count if auto-conversation was used
+                if (data.threads && data.threads > 1) {
+                    outputHtml += `<div class="text-muted small">🧵 ${data.threads} wątków, ${data.problems_resolved || 0} problemów rozwiązanych</div>`;
+                }
+
+                outputDiv.innerHTML = outputHtml;
+
+            } catch (error) {
+                outputDiv.innerHTML = `<div class="text-danger">❌ Błąd: ${escapeHtml(error.message)}</div>`;
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showTyping() {
+            const messagesDiv = document.getElementById('messages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message message-assistant';
+            typingDiv.id = 'typing-' + Date.now();
+            typingDiv.innerHTML = `
+                <div class="typing-indicator">
+                    <span></span><span></span><span></span>
+                </div>
+            `;
+            messagesDiv.appendChild(typingDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return typingDiv.id;
+        }
+
+        function removeTyping(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        // =================================================================
+        // Event Handlers
+        // =================================================================
+        function setupEventHandlers() {
+            const form = document.getElementById('chat-form');
+            const input = document.getElementById('user-input');
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const message = input.value.trim();
+                if (message) {
+                    sendMessage(message);
+                    input.value = '';
+                }
+            });
+
+            // Shift+Enter for new line, Enter to send
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    form.dispatchEvent(new Event('submit'));
+                }
+            });
+
+            // Quick actions
+            document.querySelectorAll('.quick-action').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    input.value = btn.dataset.prompt + ' ';
+                    input.focus();
+                });
+            });
+        }
+
+        // =================================================================
+        // Start
+        // =================================================================
+        init();
+    </script>
+</body>
+</html>
